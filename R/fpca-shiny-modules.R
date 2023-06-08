@@ -173,7 +173,6 @@ fpcaRunUI <- function(id, width_opts = "200px", ..., debug = FALSE) {
 #' @importFrom FacileShine
 #'   initialized
 #'   categoricalAestheticMap
-#' @importFrom FacileViz with_aesthetics fscatterplot input_data
 #' @importFrom plotly
 #'   renderPlotly
 #' @importFrom shiny
@@ -205,7 +204,7 @@ fpcaView <- function(input, output, session, rfds, pcares, ...,
       name = names(pca.$percent_var),
       variance = unname(pca.$percent_var))
     out$index <- as.integer(sub("^[^0-9]*", "", out$name))
-    out$label <- sprintf("%s (%0.1f%%)", out$name, out$variance)
+    out$label <- sprintf("%s (%0.1f%%)", out$name, out$variance * 100)
     out
   })
 

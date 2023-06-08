@@ -258,7 +258,6 @@ fdge.ReactiveFacileLinearModelDefinition <- function(x, assay_name = NULL,
 #' module.
 #'
 #' @export
-#' @importFrom FacileViz fscatterplot fboxplot input_data
 #' @importFrom DT datatable dataTableProxy formatRound renderDT replaceData
 #' @importFrom plotly event_data layout
 #' @importFrom shiny downloadHandler req
@@ -348,12 +347,13 @@ fdgeView <- function(input, output, session, rfds, dgeres, ...,
         dat. <- distinct(dat, feature_id, .keep_all = TRUE)
       }
       dat.$yaxis <- -log10(dat.$pval)
-      fplot <- fscatterplot(dat., c("logFC", "yaxis"),
-                            xlabel = "logFC", ylabel = "-log10(pval)",
-                            width = NULL, height = NULL,
-                            hover = c("symbol", "logFC", "FDR"),
-                            webgl = TRUE, event_source = feature_selection,
-                            key = "feature_id")
+      fplot <- FacileViz::fscatterplot(
+        dat., c("logFC", "yaxis"),
+        xlabel = "logFC", ylabel = "-log10(pval)",
+        width = NULL, height = NULL,
+        hover = c("symbol", "logFC", "FDR"),
+        webgl = TRUE, event_source = feature_selection,
+        key = "feature_id")
       plt <- plot(fplot)
     }
     plt
@@ -456,7 +456,7 @@ fdgeView <- function(input, output, session, rfds, dgeres, ...,
       selected <- tibble(dataset = character(), sample_id = character())
     } else {
       selected <- featureviz() |>
-        input_data() |>
+        FacileViz::input_data() |>
         slice(as.integer(selected$key)) |>
         select(dataset, sample_id)
     }
