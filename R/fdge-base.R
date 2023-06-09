@@ -12,6 +12,8 @@ initialized.FacileDgeAnalysisResult <- function(x, ...) {
 shine.FacileDgeAnalysisResult <- function(x, user = Sys.getenv("USER"),
                                           title = "Differential Expression Results",
                                           viewer = "browser", ...) {
-  frunGadget(fdgeView, fdgeViewUI, x, dgeres = x, title = title,
-             viewer = viewer, ...)
+  # frunGadget(fdgeView, fdgeViewUI, x, dgeres = x, title = title,
+  #            viewer = viewer, ...)
+  frunGadgetServer(fdgeViewServer, fdgeViewUI, x, dgeres = x, title = title,
+                   viewer = viewer, ...)
 }

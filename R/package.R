@@ -5,6 +5,7 @@
 #' @import FacileData
 #' @import FacileAnalysis
 #' @import tidyr
+#' @importFrom sparrow failWith
 NULL
 
 # Ubiquitously used methods from other package =================================

@@ -271,11 +271,12 @@ fdge.ReactiveFacileLinearModelDefinition <- function(x, assay_name = NULL,
 #' @importFrom shinyWidgets updateSwitchInput
 #' @param dgeres The result from calling [fdge()], or [fdgeRun()].
 fdgeViewServer <- function(id, rfds, dgeres, ...,
-                           feature_selection = session$ns("volcano"),
-                           sample_selection = session$ns("samples"),
+                           feature_selection = NULL,
+                           sample_selection = NULL,
                            debug = FALSE) {
   assert_class(rfds, "ReactiveFacileDataStore")
-  assert_class(dgeres, "ReactiveFacileDgeAnalysisResult")
+  assert_multi_class(dgeres, c("ReactiveFacileDgeAnalysisResult", "FacileDgeAnalysisResult"))
+
   shiny::moduleServer(id, function(input, output, session) {
     state <- reactiveValues(
       # store brushed values from volcano plot here so that it can be reset
@@ -285,7 +286,14 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
       # user turns off the volcano option
       volcano_select = tibble(assay_name = character(), feature_id = character()),
       boxplot_select = tibble(dataset = character(), sample_id = character()))
-  
+    
+    if (is.null(feature_selection)) {
+      feature_selection <- session$ns("volcano")
+    }
+    if (is.null(sample_selection)) {
+      sample_selection <- session$ns("samples")
+    }
+    
     # The FacileDGEResult object
     dge <- reactive({
       req(initialized(dgeres))

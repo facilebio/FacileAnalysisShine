@@ -36,7 +36,6 @@
 #'   browserViewer
 #'   callModule
 #'   dialogViewer
-#'   runGadget
 #'   tagList
 #'   tags
 #' @importFrom shinyjs useShinyjs
@@ -169,7 +168,7 @@ frunGadget <- function(analysisModule, analysisUI, x, user = Sys.getenv("USER"),
   }
 
   if (interactive()) {
-    runGadget(ui, server, viewer = viewer, stopOnCancel = FALSE)
+    shiny::runGadget(ui, server, viewer = viewer, stopOnCancel = FALSE)
   } else {
     # Running in an Rmd with runtime: shiny?
     opts <- list(height = height)
