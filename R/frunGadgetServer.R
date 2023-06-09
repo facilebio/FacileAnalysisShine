@@ -127,7 +127,7 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
 #'
 #' @export
 #' @param x any object
-#' @return a named list of interactions recorded from running [frunGadget()]
+#' @return a named list of interactions recorded from running [frunGadgetServer()]
 interacted <- function(x, ...) {
   out <- attr(x, "INTERACTED", exact = TRUE)
   if (is.null(out)) {

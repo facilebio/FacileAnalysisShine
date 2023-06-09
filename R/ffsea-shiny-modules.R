@@ -239,7 +239,9 @@ ffseaRunUI <- function(id, ..., debug = FALSE) {
 #' @param ares The `FacileFseaAnalysisResult`
 ffseaViewServer <- function(id, rfds, aresult, ..., debug = FALSE) {
   assert_class(rfds, "ReactiveFacileDataStore")
-  assert_class(aresult, "ReactiveFacileAnalysisResult")
+  assert_multi_class(
+    aresult, 
+    c("ReactiveFacileFseaAnalysisResult", "FacileFseaAnalysisResult"))
   
   shiny::moduleServer(id, function(input, output, session) {
     state <- reactiveValues(

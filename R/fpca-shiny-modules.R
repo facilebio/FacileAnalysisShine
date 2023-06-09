@@ -186,7 +186,9 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
                      sample_selection = session$ns("samples"),
                      debug = FALSE) {
   assert_class(rfds, "ReactiveFacileDataStore")
-  assert_class(pcares, "ReactiveFacilePcaAnalysisResult")
+  assert_multi_class(
+    pcares, 
+    c("ReactiveFacilePcaAnalysisResult", "FacilePcaAnalysisResult"))
   shiny::moduleServer(id, function(input, output, session) {
     state <- reactiveValues(
       # store brushed samples from scatterplot
