@@ -27,9 +27,11 @@ ffseaGadget <- function(x, gdb, title = "Feature Set Enrichment Analysis",
   assert_class(x, "FacileAnalysisResult")
   assert_class(gdb, "GeneSetDb")
   rgdb <- reactive(gdb)
-  frunGadget(ffseaAnalysis, ffseaAnalysisUI, x, aresult = x, gdb = rgdb,
-             title = title, height = height, width = width, viewer = viewer,
-             ..., retval = "faro", debug = debug)
+  
+  frunGadgetServer(ffseaAnalysisServer, ffseaAnalysisUI, x, 
+                   aresult = x, gdb = rgdb,
+                   title = title, height = height, width = width,
+                   viewer = viewer, ..., retval = "faro", debug = debug)
 }
 
 #' A moodule that encapsulates configuring and running ffsea, and a view to
@@ -37,23 +39,28 @@ ffseaGadget <- function(x, gdb, title = "Feature Set Enrichment Analysis",
 #'
 #' @noRd
 #' @export
-ffseaAnalysis <- function(input, output, session, rfds, aresult, gdb, ...,
-                          debug = FALSE) {
-  res <- callModule(ffseaRun, "run", rfds, aresult, gdb, ..., debug = debug)
-  view <- callModule(ffseaView, "view", rfds, res, ..., debug = FALSE)
-
-  # Only show the view UI when there is an FfseaAnalysisResult ready
-  observe({
-    toggleElement("viewbox", condition = initialized(res))
+ffseaAnalysisServer <- function(id, rfds, aresult, gdb, ..., debug = FALSE) {
+  assert_class(rfds, "ReactiveFacileDataStore")
+  assert_multi_class(aresult, c("ReactiveFacileAnalysisResult", "FacileAnalysisResult"))
+  assert_class(gdb, "reactive") # NOTE: should this be a ReactiveGeneSetDb?
+  
+  shiny::moduleServer(id, function(input, output, session) {
+    res <- ffseaRunServer("run", rfds, aresult, gdb, ..., debug = debug)
+    view <- ffseaViewServer("view", rfds, res, ..., debug = FALSE)
+    
+    # Only show the view UI when there is an FfseaAnalysisResult ready
+    observe({
+      toggleElement("viewbox", condition = initialized(res))
+    })
+    
+    vals <- list(
+      main = res,
+      view = view,
+      .ns = session$ns)
+    class(vals) <- c("ReactiveFacileFseaAnalysisResultContainer",
+                     "ReactiveFacileAnalysisResultContainer")
+    vals
   })
-
-  vals <- list(
-    main = res,
-    view = view,
-    .ns = session$ns)
-  class(vals) <- c("ReactiveFacileFseaAnalysisResultContainer",
-                   "ReactiveFacileAnalysisResultContainer")
-  vals
 }
 
 #' @noRd
@@ -95,104 +102,107 @@ ffseaAnalysisUI <- function(id, ...) {
 #' @importFrom sparrow.shiny GeneSetDb.ReactiveGeneSetDb
 #' @param aresult A `FacileAnalysisResult` that has a `ffsea.*` method defined.
 #' @param gdb A `reactive(GeneSetDb)` object
-ffseaRun <- function(input, output, session, rfds, aresult, gdb, ...,
-                     debug = FALSE) {
-  ares <- reactive({
-    req(initialized(aresult))
-    faro(aresult)
-  })
-
-  # When the AnalysisResult changes, update the runopts UI based on the specific
-  # subclass of the AnalysisResult we have at play.
-  #
-  # Because the GeneSetDb knobs to subset collection and specify geneset size
-  # are buried in the run options menu, we pass this down to the runOpts
-  # module.
-  runopts <- callModule(ffseaRunOpts, "runopts", rfds, aresult = aresult,
-                        gdb = gdb, ..., debug = debug)
-
-
-  # Updates the set-enrichment methods when the analysis result changes.
-  available_methods <- reactive({
-    ares. <- req(ares())
-    ffsea_methods(ares.)
-  })
-
-  observeEvent(available_methods(), {
-    methods <- req(available_methods())
-    choices <- split(methods[["method"]], methods[["type"]])
-    # Sub groups of length 1 break out of the grouping structure, one way
-    # to fix that if they exist is outlined here:
-    # https://github.com/rstudio/shiny/issues/1938#issuecomment-363942532
-    choices <- lapply(choices, function(xc) {
-      if (length(xc) == 1L) list(xc) else xc
+ffseaRunServer <- function(id, rfds, aresult, gdb, ..., debug = FALSE) {
+  assert_class(rfds, "ReactiveFacileDataStore")
+  assert_multi_class(aresult, c("ReactiveFacileAnalysisResult", "FacileAnalysisResult"))
+  assert_class(gdb, "reactive") # NOTE: should this be a ReactiveGeneSetDb?
+  
+  shiny::moduleServer(id, function(input, output, session) {
+    ares <- reactive({
+      req(initialized(aresult))
+      faro(aresult)
     })
-    # only pre-select first rank-based method, if not ranks based method is
-    # applicable (unlikely), this should will evaluate to NULL anyway
-    selected <- choices[["ranks"]][1L]
-
-    # rename 'ora' group to "Over Represented"
-    ora.idx <- which(names(choices) == "ora")
-    if (length(ora.idx)) names(choices)[ora.idx] <- "over representation"
-    opts <- NULL
-    updatePickerInput(session, "ffsea_methods", selected = selected,
-                      choices = choices, choicesOpt = opts)
+    
+    # When the AnalysisResult changes, update the runopts UI based on the specific
+    # subclass of the AnalysisResult we have at play.
+    #
+    # Because the GeneSetDb knobs to subset collection and specify geneset size
+    # are buried in the run options menu, we pass this down to the runOpts
+    # module.
+    runopts <- callModule(ffseaRunOpts, "runopts", rfds, aresult = aresult,
+                          gdb = gdb, ..., debug = debug)
+    
+    
+    # Updates the set-enrichment methods when the analysis result changes.
+    available_methods <- reactive({
+      ares. <- req(ares())
+      ffsea_methods(ares.)
+    })
+    
+    observeEvent(available_methods(), {
+      methods <- req(available_methods())
+      choices <- split(methods[["method"]], methods[["type"]])
+      # Sub groups of length 1 break out of the grouping structure, one way
+      # to fix that if they exist is outlined here:
+      # https://github.com/rstudio/shiny/issues/1938#issuecomment-363942532
+      choices <- lapply(choices, function(xc) {
+        if (length(xc) == 1L) list(xc) else xc
+      })
+      # only pre-select first rank-based method, if not ranks based method is
+      # applicable (unlikely), this should will evaluate to NULL anyway
+      selected <- choices[["ranks"]][1L]
+      
+      # rename 'ora' group to "Over Represented"
+      ora.idx <- which(names(choices) == "ora")
+      if (length(ora.idx)) names(choices)[ora.idx] <- "over representation"
+      opts <- NULL
+      updatePickerInput(session, "ffsea_methods", selected = selected,
+                        choices = choices, choicesOpt = opts)
+    })
+    
+    runnable <- reactive({
+      !unselected(input$ffsea_methods) &&
+        initialized(ares()) &&
+        initialized(runopts)
+    })
+    
+    observe({
+      runnable. <- runnable()
+      ftrace("runnable: ", as.character(runnable.))
+      toggleState("runbtn", condition = runnable.)
+    })
+    
+    observe({
+      ftrace("Run button pressed: ", as.character(input$runbtn))
+    })
+    
+    fsea_res <- eventReactive(input$runbtn, {
+      req(runnable())
+      
+      gdb.args <- list(
+        x = ares(),
+        fsets = GeneSetDb(runopts$gdb),
+        # min.gs.size = runopts$gdb$min.gs.size(),
+        # max.gs.size = runopts$gdb$max.gs.size(),
+        #
+        # Note that we don't set min/max sizes anymore because they were
+        # pre-specified in the universe, and depending on what features exist
+        # in the object under test, further filtering might happen which may
+        # be surprising
+        min.gs.size = 2,
+        max.gs.size = Inf)
+      
+      methods <- list(methods = input$ffsea_methods)
+      method.args <- runopts$args()
+      
+      args <- c(gdb.args, methods, method.args)
+      
+      withProgress({
+        do.call(ffsea, args)
+      }, message = "Running Enrichment Analysis")
+    })
+    
+    vals <- list(
+      faro = fsea_res,
+      .ns = session$ns)
+    
+    # TODO: fix class hierarchy
+    classes <- c("ReactiveFacileFseaAnalysisResult",
+                 "ReactiveFacileAnalysisResult",
+                 "FacileFseaAnalysisResult")
+    class(vals) <- classes
+    vals
   })
-
-  runnable <- reactive({
-    !unselected(input$ffsea_methods) &&
-      initialized(ares()) &&
-      initialized(runopts)
-  })
-
-  observe({
-    runnable. <- runnable()
-    ftrace("runnable: ", as.character(runnable.))
-    toggleState("runbtn", condition = runnable.)
-  })
-
-  observe({
-    ftrace("Run button pressed: ", as.character(input$runbtn))
-  })
-
-  fsea_res <- eventReactive(input$runbtn, {
-    req(runnable())
-
-    gdb.args <- list(
-      x = ares(),
-      fsets = GeneSetDb(runopts$gdb),
-      # min.gs.size = runopts$gdb$min.gs.size(),
-      # max.gs.size = runopts$gdb$max.gs.size(),
-      #
-      # Note that we don't set min/max sizes anymore because they were
-      # pre-specified in the universe, and depending on what features exist
-      # in the object under test, further filtering might happen which may
-      # be surprising
-      min.gs.size = 2,
-      max.gs.size = Inf)
-
-    methods <- list(methods = input$ffsea_methods)
-    method.args <- runopts$args()
-
-    args <- c(gdb.args, methods, method.args)
-
-    withProgress({
-      do.call(ffsea, args)
-    }, message = "Running Enrichment Analysis")
-  })
-
-  vals <- list(
-    faro = fsea_res,
-    .ns = session$ns)
-
-  # TODO: fix class hierarchy
-  classes <- c("ReactiveFacileFseaAnalysisResult",
-               "ReactiveFacileAnalysisResult",
-               "FacileFseaAnalysisResult")
-
-  class(vals) <- classes
-
-  vals
 }
 
 #' @noRd
@@ -227,86 +237,90 @@ ffseaRunUI <- function(id, ..., debug = FALSE) {
 #' @importFrom shiny observeEvent reactiveValues validate
 #' @param rfds the reactive facile data store
 #' @param ares The `FacileFseaAnalysisResult`
-ffseaView <- function(input, output, session, rfds, aresult, ...,
-                      debug = FALSE) {
-  state <- reactiveValues(
-    gsview_select = tibble(assay_name = character(), feature_id = character()),
-    set_select = tibble(collection = character(), name = character())
-  )
-
-  ares <- reactive({
-    req(initialized(aresult))
-    faro(aresult)
-  })
-
-  mgc <- reactive({
-    res <- req(ares())
-    mgres <- result(res)
-    # TODO: validate() isn't working here, only works inside a
-    # `output$xxx <- render*({})` block, which is generating outpout into the
-    # shiny app
-    validate(
-      need(is(mgres, "SparrowResult"), "SparrowResult can't be found")
+ffseaViewServer <- function(id, rfds, aresult, ..., debug = FALSE) {
+  assert_class(rfds, "ReactiveFacileDataStore")
+  assert_class(aresult, "ReactiveFacileAnalysisResult")
+  
+  shiny::moduleServer(id, function(input, output, session) {
+    state <- reactiveValues(
+      gsview_select = tibble(assay_name = character(), feature_id = character()),
+      set_select = tibble(collection = character(), name = character())
     )
-    sparrow.shiny::SparrowResultContainer(mgres)
+  
+    ares <- reactive({
+      req(initialized(aresult))
+      faro(aresult)
+    })
+  
+    mgc <- reactive({
+      res <- req(ares())
+      mgres <- result(res)
+      # TODO: validate() isn't working here, only works inside a
+      # `output$xxx <- render*({})` block, which is generating outpout into the
+      # shiny app
+      validate(
+        need(is(mgres, "SparrowResult"), "SparrowResult can't be found")
+      )
+      sparrow.shiny::SparrowResultContainer(mgres)
+    })
+  
+    gs_result_filter <- callModule(
+      sparrow.shiny::mgResultFilter,
+      "mg_result_filter", mgc)
+  
+    # Overview Tab ...............................................................
+    output$gseaMethodSummary <- renderUI({
+      mgc. <- req(mgc())
+      tagList(
+        tags$h4("GSEA Analyses Overview"),
+        sparrow.shiny::summaryHTMLTable.sparrow(
+          mgc.$sr, mgc.$methods,
+          gs_result_filter$fdr(),
+          p.col = "padj.by.collection")
+      )
+    })
+  
+    # GSEA Results Tab ...........................................................
+    gs_viewer <- callModule(
+      sparrow.shiny::geneSetContrastView,
+      "geneset_viewer",
+      mgc, maxOptions = 500, feature_table_filter = "top", server = TRUE)
+  
+    # A table of GSEA statistics/results for the given method and fdr threshold
+    # The table is wired to the gs_viewer so that row clicks can signal updates
+    # to the contrast viewer
+    gs_table_browser <- callModule(
+      sparrow.shiny::mgTableBrowser,
+      "mg_table_browser",
+      mgc,
+      method=gs_result_filter$method,
+      fdr=gs_result_filter$fdr,
+      server=TRUE)
+    # clicks on gsea result table update the contrast view
+    observeEvent(gs_table_browser$selected(), {
+      .mgc <- req(mgc())
+      geneset <- req(gs_table_browser$selected())
+      sparrow.shiny::updateActiveGeneSetInContrastView(session, gs_viewer,
+                                                       geneset, .mgc)
+    })
+  
+    # A table of other genesets that brushed genes in the contrast viewer
+    # belong to. This table is also wired to the contrast viewer, so that
+    # a click on a row of the table will update the contrast view, too.
+    other_genesets_gsea <- callModule(
+      sparrow.shiny::mgGeneSetSummaryByGene,
+      "other_genesets_gsea",
+      mgc, features = gs_viewer$selected,
+      method = gs_result_filter$method,
+      fdr = gs_result_filter$fdr)
+  
+    vals <- list(
+      selected_features = reactive(state$gsview_select),
+      selected_sets = reactive(state$set_select),
+      .ns = session$ns)
+  
+    vals
   })
-
-  gs_result_filter <- callModule(
-    sparrow.shiny::mgResultFilter,
-    "mg_result_filter", mgc)
-
-  # Overview Tab ...............................................................
-  output$gseaMethodSummary <- renderUI({
-    mgc. <- req(mgc())
-    tagList(
-      tags$h4("GSEA Analyses Overview"),
-      sparrow.shiny::summaryHTMLTable.sparrow(
-        mgc.$sr, mgc.$methods,
-        gs_result_filter$fdr(),
-        p.col = "padj.by.collection")
-    )
-  })
-
-  # GSEA Results Tab ...........................................................
-  gs_viewer <- callModule(
-    sparrow.shiny::geneSetContrastView,
-    "geneset_viewer",
-    mgc, maxOptions = 500, feature_table_filter = "top", server = TRUE)
-
-  # A table of GSEA statistics/results for the given method and fdr threshold
-  # The table is wired to the gs_viewer so that row clicks can signal updates
-  # to the contrast viewer
-  gs_table_browser <- callModule(
-    sparrow.shiny::mgTableBrowser,
-    "mg_table_browser",
-    mgc,
-    method=gs_result_filter$method,
-    fdr=gs_result_filter$fdr,
-    server=TRUE)
-  # clicks on gsea result table update the contrast view
-  observeEvent(gs_table_browser$selected(), {
-    .mgc <- req(mgc())
-    geneset <- req(gs_table_browser$selected())
-    sparrow.shiny::updateActiveGeneSetInContrastView(session, gs_viewer,
-                                                     geneset, .mgc)
-  })
-
-  # A table of other genesets that brushed genes in the contrast viewer
-  # belong to. This table is also wired to the contrast viewer, so that
-  # a click on a row of the table will update the contrast view, too.
-  other_genesets_gsea <- callModule(
-    sparrow.shiny::mgGeneSetSummaryByGene,
-    "other_genesets_gsea",
-    mgc, features = gs_viewer$selected,
-    method = gs_result_filter$method,
-    fdr = gs_result_filter$fdr)
-
-  vals <- list(
-    selected_features = reactive(state$gsview_select),
-    selected_sets = reactive(state$set_select),
-    .ns = session$ns)
-
-  vals
 }
 
 #' @noRd

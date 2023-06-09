@@ -20,7 +20,8 @@ shiny::shinyApp(
     rfds <- callModule(FacileShine::filteredReactiveFacileDataStore, "rfds",
                        path = reactive(efds$parent.dir),
                        user = "lianoglou")
-    analysis <- callModule(fdgeAnalysis, "analysis", rfds)
+    # analysis <- callModule(fdgeAnalysis, "analysis", rfds)
+    analysis <- fdgeAnalysisServer("analysis", rfds)
   }
 )
 

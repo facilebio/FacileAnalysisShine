@@ -2,7 +2,7 @@
 % Please edit documentation in R/fdge-shiny-modules.R
 \name{fdgeGadget}
 \alias{fdgeGadget}
-\alias{fdgeAnalysis}
+\alias{fdgeAnalysisServer}
 \title{Fully interactive differential expression analysis}
 \usage{
 fdgeGadget(
@@ -14,7 +14,7 @@ fdgeGadget(
   ...
 )
 
-fdgeAnalysis(input, output, session, rfds, ..., debug = FALSE)
+fdgeAnalysisServer(id, rfds, ..., debug = FALSE)
 }
 \value{
 a \code{ReactiveFacileDgeAnalysisResult}, the output from \code{\link[=fdge]{fdge()}}
