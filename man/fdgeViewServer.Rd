@@ -9,8 +9,8 @@ fdgeViewServer(
   rfds,
   dgeres,
   ...,
-  feature_selection = session$ns("volcano"),
-  sample_selection = session$ns("samples"),
+  feature_selection = NULL,
+  sample_selection = NULL,
   debug = FALSE
 )
 }

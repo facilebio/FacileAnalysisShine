@@ -49,10 +49,13 @@ fDgeSeaAnalysis <- function(input, output, session, rfds, gdb = NULL, ...,
                         debug = debug)
 
   # ffsea bits .................................................................
-  fsea <- callModule(ffseaRun, "fsea", rfds, dge, gdb = gdb, ..., debug = debug)
-  fsea_view <- callModule(ffseaView, "fsea_view", rfds, fsea, ...,
-                          debug = FALSE)
+  # fsea <- callModule(ffseaRun, "fsea", rfds, dge, gdb = gdb, ..., debug = debug)
+  # fsea_view <- callModule(ffseaView, "fsea_view", rfds, fsea, ...,
+  #                         debug = FALSE)
 
+  fsea <- ffseaRunServer("fsea", rfds, dge, gdb = gdb, ..., debug = debug)
+  fsea_view <- ffseaViewServer("fsea_view", rfds, fsea, ..., debug = debug)
+  
   # toggle UI logic ............................................................
   # Only show the view UI when there is (at least) a DGE result.
   observe({

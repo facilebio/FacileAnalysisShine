@@ -16,7 +16,6 @@
 #'   update_exclude
 #' @importFrom shiny renderText
 #' @importFrom shinyjs toggleElement
-#' @importFrom shinyWidgets sendSweetAlert
 #' @return A `ReactiveFacileLinearModelDefinition` object, the output from
 #'   [flm_def()].
 flmDefRunServer <- function(id, rfds, default_covariate = NULL,
@@ -102,7 +101,8 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
       iserr <- is(s, "FacileAnalysisStatusError")
       toggleElement("messagebox", condition = !iserr)
       if (iserr) {
-        sendSweetAlert(session, "Error building model",text = s, type = "error")
+        shinyWidgets::sendSweetAlert(session, "Error building model",
+                                     text = s, type = "error")
       }
     })
     

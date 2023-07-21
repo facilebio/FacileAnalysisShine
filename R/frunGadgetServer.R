@@ -48,20 +48,21 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
   ui.content <- analysisUI("analysis", ..., debug = debug)
   if (sample.filter) {
     ui.content <- tagList(
-      filteredReactiveFacileDataStoreUI("ds"),
+      FacileShine::filteredReactiveFacileDataStoreUI("ds"),
       tags$hr(),
       ui.content)
   }
   
-  ui <- miniPage(
-    useShinyjs(),
-    useSweetAlert(),
-    if (interactive()) gadgetTitleBar(title) else NULL,
-    miniContentPanel(ui.content),
+  ui <- miniUI::miniPage(
+    shinyjs::useShinyjs(),
+    shinyWidgets::useSweetAlert(),
+    if (interactive()) miniUI::gadgetTitleBar(title) else NULL,
+    miniUI::miniContentPanel(ui.content),
     NULL)
   
   server <- function(input, output, session) {
-    rfds <- ReactiveFacileDataStore(fds., "ds", user = user, samples = samples.)
+    rfds <- FacileShine::ReactiveFacileDataStore(fds., "ds", user = user,
+                                                 samples = samples.)
     analysis <- modServer("analysis", rfds, ..., debug = debug)
     
     if (!is.null(xtra_covariates)) {
