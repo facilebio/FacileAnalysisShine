@@ -1,4 +1,4 @@
-Package: iFacileAnalysis
+Package: FacileAnalysisShine
 Type: Package
 Title: I(mmersive|nteractive) components to a FacileAnalysis
 Version: 0.0.1
@@ -9,8 +9,8 @@ Authors@R: c(
       role = c("aut", "cre"), comment = c(ORCID = "0000-0002-0924-1754")))
 Description: Provides interactive components to create an immersive
     FacileAnalysis experience.
-URL: https://github.com/facilebio/iFacileAnalysis
-BugReports: https://github.com/facilebio/iFacileAnalysis/issues
+URL: https://github.com/facilebio/FacileAnalysisShine
+BugReports: https://github.com/facilebio/FacileAnalysisShine/issues
 Depends:
     R (>= 4.2.0)
 Imports:
