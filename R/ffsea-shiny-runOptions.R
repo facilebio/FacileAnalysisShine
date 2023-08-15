@@ -10,7 +10,7 @@
 #' @return An `FfseaRunOptions` list, where `$args()` is a reactive list, with
 #'   name=value pairs set to the arguments to run the appropriate `ffsea.*`
 #'   method for `aresult`.
-ffseaRunOpts <- function(input, output, session, rfds, aresult, gdb = gdb, ...,
+ffseaRunOpts <- function(input, output, session, rfds, aresult, gdb, ...,
                          debug = FALSE) {
   ns <- session$ns
   state <- reactiveValues(
@@ -25,7 +25,7 @@ ffseaRunOpts <- function(input, output, session, rfds, aresult, gdb = gdb, ...,
   # Enable user to configure the GeneSetDb used for testing
   rgdb <- callModule(
     sparrow.shiny::reactiveGeneSetDb,
-    "gdb", gdb, ..., debug = debug)
+    "gdb", gdb, debug = debug, ...)
 
   observeEvent(ares(), {
     ares. <- req(ares())
