@@ -42,7 +42,10 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
     
     model <- reactive({
       samples. <- FacileShine::active_samples(rfds)
-      req(nrow(samples.) > 3L)
+      shiny::validate(
+        shiny::need(
+          nrow(samples.) >= 3L, "Need at least 3 samples for a linear model")
+      )
       
       testcov. <- name(testcov)
       req(!unselected(testcov.))
@@ -63,7 +66,7 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
       is_sane <- is.anova || is.ttest
       
       if (is_sane) {
-        flm_def(samples., testcov., numer = numer., denom = denom.,
+        out <- flm_def(samples., testcov., numer = numer., denom = denom.,
                 batch = batch.)
       } else {
         out <- NULL
