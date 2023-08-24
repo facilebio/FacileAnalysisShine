@@ -10,6 +10,10 @@ NULL
 
 # Ubiquitously used methods from other package =================================
 
-#' @importFrom FacileShine annotation
+#' @importFrom FacileShine
+#'   annotation
+#'   initialized
+#' @importFrom FacileViz
+#'   unselected
 #' @export annotation
 NULL

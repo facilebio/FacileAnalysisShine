@@ -19,55 +19,31 @@
 #' @return A `ReactiveFacileLinearModelDefinition` object, the output from
 #'   [flm_def()].
 flmDefRunServer <- function(id, rfds, default_covariate = NULL,
-                            ..., debug = FALSE, .reactive = TRUE) {
+                            ..., debug = FALSE) {
   assert_class(rfds, "ReactiveFacileDataStore")
   shiny::moduleServer(id, function(input, output, session) {
-    isolate. <- if (.reactive) base::identity else shiny::isolate
+
+    testcov <- FacileShine::categoricalSampleCovariateSelectServer(
+      "testcov", rfds, include1 = FALSE, default_covariate = default_covariate,
+      with_none = FALSE)
     
-    active.samples <- reactive({
-      req(initialized(rfds))
-      # isolate.(active_samples(rfds))
-      ftrace("Updating active samples")
-      active_samples(rfds)
-    })
+    numer <- FacileShine::categoricalSampleCovariateLevelsSelectServer(
+      "numer", testcov)
+    denom <- FacileShine::categoricalSampleCovariateLevelsSelectServer(
+      "denom", testcov)
     
-    testcov <- callModule(categoricalSampleCovariateSelect, "testcov",
-                          rfds, include1 = FALSE,
-                          default_covariate = default_covariate,
-                          ..., .with_none = FALSE,
-                          .reactive = .reactive)
+    
     # the "batch" covariate is what I'm calling the extra/batch-level
     # covariates. the entry selected in the testcov is removed from the
     # available elemetns to select from here
-    batchcov <- callModule(categoricalSampleCovariateSelect, "batchcov",
-                           rfds, include1 = FALSE, ..., .with_none = FALSE,
-                           .exclude = testcov$covariate,
-                           reactive = .reactive, ignoreNULL = FALSE)
-    
-    numer <- callModule(categoricalSampleCovariateLevels, "numer",
-                        rfds, testcov, .reactive = .reactive, ignoreNULL = FALSE)
-    
-    denom <- callModule(categoricalSampleCovariateLevels, "denom",
-                        rfds, testcov, .reactive = .reactive, ignoreNULL = FALSE)
-    
-    # Make the levels available in the numer and denom covariates
-    # mutually exclusive
-    # Note: I can't get categoricalSampleCovariateLevels to work
-    # smoothly like this when `ignoreNULL = FALSE` is set so that
-    # when one selectize drains, its last level is made availalbe
-    # to the other select.
-    # TODO: Use FacileShine::categoricalSampleCovariateLevels
-    #       instead of individual numer and denom selects so that
-    #       the empty select releases its last level to the
-    #       "select pool"
-    # observe({
-    #   update_exclude(denom, numer$values)
-    #   update_exclude(numer, denom$values)
-    # })
+    batchcov <- FacileShine::categoricalSampleCovariateSelectServer(
+      "batchcov", rfds, include1 = FALSE, exclude = testcov$covariate,
+      with_none = FALSE)
     
     model <- reactive({
-      req(initialized(rfds))
-      samples. <- active.samples()
+      samples. <- FacileShine::active_samples(rfds)
+      req(nrow(samples.) > 3L)
+      
       testcov. <- name(testcov)
       req(!unselected(testcov.))
       
@@ -75,18 +51,24 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
       denom. <- denom$values()
       batch. <- name(batchcov)
       
-      # Ensure that either
-      #   i. neither numer or denom is filled so that we run an ANOVA;
-      #  ii. both are filled for a propper t-test specification
-      partial <- xor(unselected(numer.), unselected(denom.))
-      all.dups <- !unselected(numer.) && setequal(numer., denom.)
-      
-      if (partial || all.dups) {
-        out <- NULL
-      } else {
-        out <- flm_def(samples., testcov., numer = numer., denom = denom.,
-                       batch = batch.)
+      is.anova <- !unselected(testcov.) &&
+        unselected(numer.) && unselected(denom.)
+      is.ttest <- !unselected(testcov.) &&
+        !unselected(numer.) && !unselected(denom.) &&
+        !setequal(numer., denom.)
+      if (is.ttest) {
+        req(all(c(numer., denom.) %in% testcov$levels()))
       }
+      
+      is_sane <- is.anova || is.ttest
+      
+      if (is_sane) {
+        flm_def(samples., testcov., numer = numer., denom = denom.,
+                batch = batch.)
+      } else {
+        out <- NULL
+      } 
+
       out
     })
     
@@ -151,26 +133,26 @@ flmDefRunUI <- function(id, ..., debug = FALSE) {
   out <- tagList(
     fluidRow(
       column(
-        2,
-        categoricalSampleCovariateSelectUI(
+        width = 2,
+        FacileShine::categoricalSampleCovariateSelectInput(
           ns("testcov"),
           label = "Group to test",
           multiple = FALSE)),
       column(
-        4,
-        categoricalSampleCovariateLevelsUI(
+        width = 4,
+        FacileShine::categoricalSampleCovariateLevelsSelectInput(
           ns("numer"),
           label = "Numerator",
           multiple = TRUE)),
       column(
-        4,
-        categoricalSampleCovariateLevelsUI(
+        width = 4,
+        FacileShine::categoricalSampleCovariateLevelsSelectInput(
           ns("denom"),
           label = "Denominator",
           multiple = TRUE)),
       column(
-        2,
-        categoricalSampleCovariateSelectUI(
+        width = 2,
+        FacileShine::categoricalSampleCovariateSelectInput(
           ns("batchcov"),
           label = "Control for",
           multiple = TRUE))),
