@@ -1,13 +1,14 @@
 devtools::load_all(".")
-efds <- FacileData::FacileDataSet("~/workspace/facilebio/data/BulkKPMPDataSet")
+afds <- FacileData::an_fds()
 user <- Sys.getenv("USER")
 options(facile.log.level.fshine = "trace")
 
-gdb <- sparrow::getMSigGeneSetDb("h", "human", "entrez")
+gdb <- sparrow::getMSigGeneSetDb("h", "human", "ensembl")
 
-pca.crc <- efds |>
-  FacileData::filter_samples(indication == "CRC") |>
-  fpca()
+dge.res <- afds |> 
+  FacileData::filter_samples(cell_abbrev %in% c("CNT", "DCT")) |> 
+  flm_def("cell_abbrev", "DCT", "CNT") |> 
+  fdge(assay_name = "scrnaseq", method = "voom")
 
 # All in one module ============================================================
 shiny::shinyApp(
@@ -22,8 +23,8 @@ shiny::shinyApp(
         shiny::tags$h2("ffseaAnalysis"),
         ffseaAnalysisUI("ffsea")))),
   server = function(input, output) {
-    rfds <- FacileShine::facileDataStoreServer("rfds", reactive(efds))
-    ffsea <- ffseaAnalysisServer("ffsea", rfds, pca.crc, shiny::reactive(gdb))
+    rfds <- FacileShine::facileDataStoreServer("rfds", reactive(afds))
+    ffsea <- ffseaAnalysisServer("ffsea", rfds, dge.res, shiny::reactive(gdb))
   }
 )
 

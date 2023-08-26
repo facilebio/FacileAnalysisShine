@@ -3,7 +3,6 @@ afds <- FacileData::an_fds()
 user <- Sys.getenv("USER")
 options(facile.log.level.fshine = "trace")
 
-
 # debug(FacileData:::biocbox.facile_frame)
 # debug(FacileData:::.fetch_assay_data)
 
