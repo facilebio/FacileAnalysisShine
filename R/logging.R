@@ -1,12 +1,12 @@
-# Override the flogging functions to provide the "fanalysis" namespace as defult
+# Override the flogging functions to provide the "fanalshine" namespace as defult
 
 #' @noRd
-flog <- function(..., ns = "fanalysis") {
+flog <- function(..., ns = "fanalshine") {
   FacileData::flog(..., ns = ns)
 }
 
 #' @noRd
-ftrace <- function(..., ns = "fanalysis", session = NULL) {
+ftrace <- function(..., ns = "fanalshine", session = NULL) {
   if (missing(session)) {
     session <- try(get("session", envir = parent.frame()), silent = TRUE)
   }
@@ -14,7 +14,7 @@ ftrace <- function(..., ns = "fanalysis", session = NULL) {
 }
 
 #' @noRd
-fdebug <- function(..., ns = "fanalysis", session = NULL) {
+fdebug <- function(..., ns = "fanalshine", session = NULL) {
   if (missing(session)) {
     session <- try(get("session", envir = parent.frame()), silent = TRUE)
   }
@@ -22,7 +22,7 @@ fdebug <- function(..., ns = "fanalysis", session = NULL) {
 }
 
 #' @noRd
-finfo <- function(..., ns = "fanalysis", session = NULL) {
+finfo <- function(..., ns = "fanalshine", session = NULL) {
   if (missing(session)) {
     session <- try(get("session", envir = parent.frame()), silent = TRUE)
   }
@@ -30,7 +30,7 @@ finfo <- function(..., ns = "fanalysis", session = NULL) {
 }
 
 #' @noRd
-fwarn <- function(..., ns = "fanalysis", session = NULL) {
+fwarn <- function(..., ns = "fanalshine", session = NULL) {
   if (missing(session)) {
     session <- try(get("session", envir = parent.frame()), silent = TRUE)
   }
@@ -38,7 +38,7 @@ fwarn <- function(..., ns = "fanalysis", session = NULL) {
 }
 
 #' @noRd
-ferror <- function(..., ns = "fanalysis", session = NULL) {
+ferror <- function(..., ns = "fanalshine", session = NULL) {
   if (missing(session)) {
     session <- try(get("session", envir = parent.frame()), silent = TRUE)
   }
@@ -46,7 +46,7 @@ ferror <- function(..., ns = "fanalysis", session = NULL) {
 }
 
 #' @noRd
-ffatal <- function(..., ns = "fanalysis", session = NULL) {
+ffatal <- function(..., ns = "fanalshine", session = NULL) {
   if (missing(session)) {
     session <- try(get("session", envir = parent.frame()), silent = TRUE)
   }

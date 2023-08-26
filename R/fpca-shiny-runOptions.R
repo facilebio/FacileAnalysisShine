@@ -30,13 +30,12 @@ fpcaRunOptionsUI <- function(id, width = "300px", ..., debug = FALSE) {
 #'   current assay the pca will be run over.
 #' @param asamples a reactive data.frame that enumerates the active samples the
 #'   PCA will be run on
-fpcaRunOptions <- function(input, output, session, assay, asamples,
-                           ...) {
+fpcaRunOptions <- function(input, output, session, rfds, assay, ...) {
   
   # Set the maximum number of PCs such that they do not exceed number of samples
   # Running PCA is also disabled if there are less than three samples.
-  observeEvent(asamples(), {
-    asamples. <- req(asamples())
+  observeEvent(rfds$active_samples(), {
+    asamples. <- req(rfds$active_samples())
     nsamples <- nrow(asamples.)
     req(nsamples > 2)
     npcs <- input$pcs

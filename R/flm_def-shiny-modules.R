@@ -31,11 +31,12 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
     # covariates. the entry selected in the testcov is removed from the
     # available elemetns to select from here
     batchcov <- FacileShine::categoricalSampleCovariateSelectServer(
-      "batchcov", rfds, include1 = FALSE, exclude = testcov$covariate,
+      "batchcov", rfds, include1 = FALSE, exclude = testcov$selected,
       with_none = FALSE)
     
     model <- reactive({
-      samples. <- FacileShine::active_samples(rfds)
+      # samples. <- FacileShine::active_samples(rfds)
+      samples. <- rfds$active_samples()
       shiny::validate(
         shiny::need(
           nrow(samples.) >= 3L, "Need at least 3 samples for a linear model")

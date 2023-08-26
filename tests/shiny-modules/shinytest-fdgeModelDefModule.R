@@ -9,6 +9,8 @@ user <- Sys.getenv("USER")
 
 ignore <- names(pdata)[sapply(pdata, is.numeric)]
 ignore <- NULL
+options(facile.log.level.fshine = "trace")
+
 
 shiny::shinyApp(
   ui = shiny::fluidPage(

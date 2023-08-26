@@ -154,7 +154,7 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
     
     dge <- eventReactive(input$run, {
       req(runnable())
-      assay_name. <- assay$assay_name()
+      assay_name. <- assay$selected()
       flm <- unreact(faro(model))
       withProgress({
         fdge(flm, assay_name = assay_name.,

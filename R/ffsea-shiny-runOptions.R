@@ -87,7 +87,7 @@ ffseaRunOptsUI <- function(id, width = "350px", ..., debug = FALSE) {
 
   shinyWidgets::dropdown(
     ns("opts"),
-    icon = icon("sliders"),
+    icon = shiny::icon("sliders"),
     status = "primary",
     # circle = FALSE,
     width = width,

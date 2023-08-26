@@ -35,7 +35,8 @@ fpcaAnalysisServer <- function(id, rfds, ..., debug = FALSE) {
     observe({
       res. <- req(faro(pca))
       show <- is(res., "FacilePcaAnalysisResult")
-      toggleElement("viewbox", condition = show)
+      ftrace("Toggling PCA viewbox to: ", if (show) "show" else "hide")
+      # shinyjs::toggleElement("viewbox", condition = show)
     })
     
     vals <- list(
@@ -57,10 +58,12 @@ fpcaAnalysisUI <- function(id, ..., debug = FALSE) {
     shiny::tags$div(
       id = ns("runbox"), 
       fpcaRunUI(ns("pca"), debug = debug)),
-    shinyjs::hidden(
+    # shinyjs::hidden(
       shiny::tags$div(
         ns("viewbox"), 
-        fpcaViewUI(ns("view"), debug = debug))))
+        fpcaViewUI(ns("view"), debug = debug))
+    # )
+  )
 }
 
 # Run PCA ======================================================================
@@ -79,7 +82,7 @@ fpcaRunServer <- function(id, rfds, ..., debug = FALSE) {
     batch <- FacileShine::batchCorrectConfigServer("batch", rfds, debug = debug)
     assay <- FacileShine::assaySelectServer("assay", rfds)
 
-    runopts <- callModule(fpcaRunOptions, "runopts", assay, rfds$active_samples)
+    runopts <- callModule(fpcaRunOptions, "runopts", rfds, assay)
     
     runnable <- reactive({
       req(initialized(rfds) && initialized(runopts))
@@ -92,7 +95,7 @@ fpcaRunServer <- function(id, rfds, ..., debug = FALSE) {
     result <- eventReactive(input$run, {
       req(runnable())
       samples. <- rfds$active_samples()
-      assay_name <- assay$assay_name()
+      assay_name <- assay$selected()
       
       features. <- runopts$feature_universe()
       pcs <- runopts$npcs()
@@ -102,13 +105,17 @@ fpcaRunServer <- function(id, rfds, ..., debug = FALSE) {
       batch. <- name(batch$batch)
       main. <- name(batch$main)
 
-      shiny::withProgress({
+      ftrace("running fpca")
+      out <- shiny::withProgress({
         these <- unreact(samples.)
         fpca(these, dims = pcs, ntop = ntop, assay_name = assay_name,
              features = features., filter = "variance",
              batch = batch., main = main., prior.count = pcount,
              custom_key = user(rfds))
       }, message = "Performing PCA")
+      ftrace("PCA ran on ", nrow(these), " samples")
+      ftrace("PCA Output on ", nrow(tidy(out)), " samples")
+      out
     })
     
     vals <- list(
@@ -288,6 +295,7 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
         tidy()
     })
     
+    # Loadings =================================================================
     pc.loadings <- reactive({
       pc <- paste0("PC", input$loadingsPC)
       req(feature.ranks()) |>
@@ -295,7 +303,25 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
         select(symbol, feature_id, score)
     })
     
-    # Loadings Table .............................................................
+    observe({
+      ldat <- req(pc.loadings())
+      shinyjs::toggleState(
+        "loadingsdl",
+        condition = is(ldat, "data.frame") && nrow(ldat) > 0)
+    })
+    
+    output$loadingsdl <- shiny::downloadHandler(
+      filename = function() {
+        req(feature.ranks(), assay_name.())
+        name <- paste0("pca-loadings-", assay_name.(), ".csv")
+      },
+      content = function(file) {
+        dat <- req(feature.ranks()) |> 
+          select(dimension, symbol, feature_id, score)
+        write.csv(dat, file, row.names = FALSE)
+      }
+    )
+    
     output$loadings <- DT::renderDT({
       dtopts <- list(deferRender = TRUE, scrollY = 450,
                      # scroller = TRUE,
@@ -344,10 +370,21 @@ fpcaViewUI <- function(id, ..., debug = FALSE) {
       shiny::column(
         width = 5,
         shiny::tags$h4("Feature Loadings"),
-        shiny::tags$div(
-          shiny::selectInput(ns("loadingsPC"), "Principal Component",
-                             choices = NULL)),
-        # TODO: Add a download table button
+        # shiny::fluidRow(
+        #   shiny::column(
+        #     width = 4,
+        #     shiny::tags$div(
+              shiny::selectInput(
+                ns("loadingsPC"), 
+                "Principal Component",
+                choices = NULL),
+        # )),
+          # shiny::column(
+            # width = 8,
+            shinyjs::disabled(
+              shiny::downloadButton(ns("loadingsdl"), "Download Loadings"))
+          # )),
+        ,
         # shinyWidgets::addSpinner(
         DT::DTOutput(ns("loadings"), height = "650px"),
         spin = getOption("FacileShine.spinner_type"),
