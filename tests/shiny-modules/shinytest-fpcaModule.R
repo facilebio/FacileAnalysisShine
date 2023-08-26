@@ -19,18 +19,18 @@ options(facile.log.level.fshine = "trace")
 # All in one module ============================================================
 shiny::shinyApp(
   ui = shiny::fluidPage(
-     FacileShine::filteredReactiveFacileDataStoreUI("rfds"),
-    # shiny::tags$h2("fdgeAnalysis"),
-    # fdgeAnalysisUI("analysis"),
-    shiny::tags$h2("fpcaAnalysis"),
-    fpcaAnalysisUI("analysis"),
-    NULL),
-
+    shiny::fluidRow(
+      shiny::column(
+        width = 3,
+        shiny::wellPanel(
+          FacileShine::facileSampleFiltersSelectInput("rfds", debug = debug))),
+      shiny::column(
+        width = 9,
+        shiny::tags$h2("fpcaAnalysis"),
+        fpcaAnalysisUI("analysis")))),
   server = function(input, output) {
-    rfds <- callModule(FacileShine::filteredReactiveFacileDataStore, "rfds",
-                       path = reactive(efds$parent.dir),
-                       user = "lianoglou")
-    analysis <- callModule(fpcaAnalysis, "analysis", rfds)
+    rfds <- FacileShine::facileDataStoreServer("rfds", reactive(efds))
+    analysis <- fpcaAnalysisServer("analysis", rfds)
   }
 )
 

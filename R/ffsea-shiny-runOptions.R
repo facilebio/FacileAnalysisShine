@@ -4,7 +4,6 @@
 #'
 #' @noRd
 #' @export
-#' @importFrom shiny outputOptions renderUI
 #' @param ares a reactive that contains a FacileAnalysisResult
 #' @param gdb A `reactive(GeneSetDb)` object
 #' @return An `FfseaRunOptions` list, where `$args()` is a reactive list, with
@@ -38,7 +37,7 @@ ffseaRunOpts <- function(input, output, session, rfds, aresult, gdb, ...,
       state$aclass <- aclass
       uistuff <- renderFfseaRunOptsUI(ares., ns)
       state$default_args <- uistuff$args
-      output$ui <- renderUI(uistuff$ui)
+      output$ui <- shiny::renderUI(uistuff$ui)
     }
   }, priority = 5)
 
@@ -50,7 +49,7 @@ ffseaRunOpts <- function(input, output, session, rfds, aresult, gdb, ...,
     # for (arg in names(args)) {
     #   outputOptions(output, arg, suspendWhenHidden = FALSE)
     # }
-    outputOptions(output, "ui", suspendWhenHidden = FALSE)
+    shiny::outputOptions(output, "ui", suspendWhenHidden = FALSE)
   })
 
   # extracts the values from the UI for this object
@@ -80,31 +79,29 @@ ffseaRunOpts <- function(input, output, session, rfds, aresult, gdb, ...,
 #'
 #' @noRd
 #' @export
-#' @importFrom shiny NS tags uiOutput
-#' @importFrom shinyWidgets dropdown dropdownButton
 #' @return a list with `$ui` for the tagList of interface components and
 #'   `$args`, which is a list of name/value pairs for the default arguments
 #'   of the ffsea.* function implementation.
 ffseaRunOptsUI <- function(id, width = "350px", ..., debug = FALSE) {
-  ns <- NS(id)
+  ns <- shiny::NS(id)
 
-  dropdown(
-    inputId = ns("opts"),
+  shinyWidgets::dropdown(
+    ns("opts"),
     icon = icon("sliders"),
     status = "primary",
     # circle = FALSE,
     width = width,
-    tags$div(
+    shiny::tags$div(
       id = ns("genesetdbconfig"),
-      tags$h4(
-        tags$span("Gene Set Selection",
-                  style = "background: #fff; padding: 0 10px 0 0"),
+      shiny::tags$h4(
+        shiny::tags$span("Gene Set Selection",
+                         style = "background: #fff; padding: 0 10px 0 0"),
         style = "border-bottom: 1px solid #000; line-height: 0.1em; margin-bottom: 13px"),
       sparrow.shiny::reactiveGeneSetDbUI(ns("gdb"))),
-    tags$div(
+    shiny::tags$div(
       id = ns("ffseaRunOptsContainer"),
       # style = "height: 400px",
-      uiOutput(ns("ui"))))
+      shiny::uiOutput(ns("ui"))))
 }
 
 # Helper Functions =============================================================
@@ -130,13 +127,6 @@ renderFfseaRunOptsUI <- function(x, ns, ...) {
 
 #' @noRd
 #' @export
-#' @importFrom shiny
-#'   checkboxInput
-#'   numericInput
-#'   outputOptions
-#'   selectInput
-#'   tagList
-#'   tags
 renderFfseaRunOptsUI.FacileTtestAnalysisResult <- function(x, ns, ...) {
   args <- default_ffsea_args(x)
   # We can rank by either logFC or t-statistics (if they are available)
@@ -145,55 +135,60 @@ renderFfseaRunOptsUI.FacileTtestAnalysisResult <- function(x, ns, ...) {
   # NOTE: We may want to update this and even have the UI update with the number
   # of features that pass these filtering criteria, and what have you.
 
-  ui <- tagList(
-    tags$div(
+  ui <- shiny::tagList(
+    shiny::tags$div(
       id = ns("rankoptsbox"),
-      tags$h4(
-        tags$span("Rank Encirhment Options",
-                  style = "background: #fff; padding: 0 10px 0 0"),
-        style = "border-bottom: 1px solid #000; line-height: 0.1em; margin-bottom: 13px"),
+      style = "border-bottom: 1px solid #000; line-height: 0.1em; margin-bottom: 13px",
+      shiny::tags$h4(
+        shiny::tags$span(
+          style = "background: #fff; padding: 0 10px 0 0",
+          "Rank Encirhment Options")),
       tags$p("Configure how genes are ranked"),
-      selectInput(ns("rank_by"), "Rank By", choices = rank.opts,
-                  selected = rank.opts[1]),
-      checkboxInput(ns("signed"), "Signed Ranks", value = args$signed)),
-    tags$div(
+      shiny::selectInput(
+        ns("rank_by"), "Rank By", choices = rank.opts,
+        selected = rank.opts[1]),
+      shiny::checkboxInput(ns("signed"), "Signed Ranks", value = args$signed)),
+    shiny::tags$div(
       id = ns("oraoptsbox"),
-      tags$h4(
-        tags$span("Over Representation Options",
-                  style = "background: #fff; padding: 0 10px 0 0"),
+      shiny::tags$h4(
+        shiny::tags$span(
+          "Over Representation Options",
+          style = "background: #fff; padding: 0 10px 0 0"),
         style = "border-bottom: 1px solid #000; line-height: 0.1em; margin-bottom: 13px"),
-      tags$p("Coriteria for selecting genes of interest"),
-      numericInput(ns("min_logFC"), "Min absolute logFC", value = args$min_logFC,
-                   min = 0, max = 10, step = 0.5),
-      numericInput(ns("max_padj"), "Max FDR", value = args$max_padj,
-                   min = 0, max = 1, step = 0.05)))
+      shiny::tags$p("Coriteria for selecting genes of interest"),
+      shiny::numericInput(
+        ns("min_logFC"), "Min absolute logFC", value = args$min_logFC,
+        min = 0, max = 10, step = 0.5),
+      shiny::numericInput(
+        ns("max_padj"), "Max FDR", value = args$max_padj,
+        min = 0, max = 1, step = 0.05)))
 
   list(args = args, ui = ui)
 }
 
 #' @noRd
 #' @export
-#' @importFrom shiny numericInput tagList tags
 renderFfseaRunOptsUI.FacileAnovaAnalysisResult <- function(x, ns, ...) {
   args <- default_ffsea_args(x)
-  ui <- tagList(
-    numericInput(ns("max_padj"), "Max FDR", value = args$max_padj,
-                 min = 0, max = 1, step = 0.05))
+  ui <- shiny::tagList(
+    shiny::numericInput(
+      ns("max_padj"), "Max FDR", value = args$max_padj,
+      min = 0, max = 1, step = 0.05))
   list(args = args, ui = ui)
 }
 
 #' @noRd
 #' @export
-#' @importFrom shiny selectInput tagList tags
 renderFfseaRunOptsUI.FacilePcaAnalysisResult <- function(x, ns, ...) {
   args <- default_ffsea_args(x)
   dims <- intersect(names(x$percent_var), colnames(tidy(x)))
   labels <- sprintf("%s (%.02f%% variance)", dims, x$percent_var[dims] * 100)
   choices <- setNames(dims, labels)
-  ui <- tagList(
-    selectInput(ns("dim"), "Test Dimension", choices = choices,
-                selected = choices[1L]),
-    checkboxInput(ns("signed"), "Signed Ranks", value = args$signed))
+  ui <- shiny::tagList(
+    shiny::selectInput(
+      ns("dim"), "Test Dimension", choices = choices,
+      selected = choices[1L]),
+    shiny::checkboxInput(ns("signed"), "Signed Ranks", value = args$signed))
   list(args = args, ui = ui)
 }
 

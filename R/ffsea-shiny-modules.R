@@ -7,7 +7,6 @@
 #' @rdname interactive-ffsea
 #'
 #' @export
-#' @importFrom shiny reactive
 #'
 #' @param x A FacileAnalysisResult that has an implemented `ffsea.*` method
 #' @param gdb A `GeneSetDb` to use for the FSEA.
@@ -65,21 +64,23 @@ ffseaAnalysisServer <- function(id, rfds, aresult, gdb, ..., debug = FALSE) {
 
 #' @noRd
 #' @export
-#' @importFrom shinyjs hidden
 ffseaAnalysisUI <- function(id, ...) {
-  ns <- NS(id)
+  ns <- shiny::NS(id)
 
-  tagList(
-    tags$div(
+  shiny::tagList(
+    shiny::tags$div(
       id = ns("runbox"),
-      box(title = "Configure Feature Set Analysis",
-          width = 12,
-          ffseaRunUI(ns("run")))),
-    hidden(
-      tags$div(
+      shinydashboard::box(
+        title = "Configure Feature Set Analysis",
+        width = 12,
+        ffseaRunUI(ns("run")))),
+    shinyjs::hidden(
+      shiny::tags$div(
         id = ns("viewbox"),
-        box(title = "Feature Set Analysis Results", solidHeader = TRUE,
-            width = 12, ffseaViewUI(ns("view"), debug = debug)))))
+        shinydashboard::box(
+          title = "Feature Set Analysis Results",
+          solidHeader = TRUE, width = 12, 
+          ffseaViewUI(ns("view"), debug = debug)))))
 }
 
 # Run ==========================================================================
@@ -96,8 +97,6 @@ ffseaAnalysisUI <- function(id, ...) {
 #'
 #' @rdname interactive-ffsea
 #' @export
-#' @importFrom shiny eventReactive withProgress
-#' @importFrom shinyWidgets updatePickerInput
 #' @importFrom sparrow GeneSetDb
 #' @importFrom sparrow.shiny GeneSetDb.ReactiveGeneSetDb
 #' @param aresult A `FacileAnalysisResult` that has a `ffsea.*` method defined.
@@ -146,8 +145,9 @@ ffseaRunServer <- function(id, rfds, aresult, gdb, ..., debug = FALSE) {
       ora.idx <- which(names(choices) == "ora")
       if (length(ora.idx)) names(choices)[ora.idx] <- "over representation"
       opts <- NULL
-      updatePickerInput(session, "ffsea_methods", selected = selected,
-                        choices = choices, choicesOpt = opts)
+      shinyWidgets::updatePickerInput(
+        session, "ffsea_methods", selected = selected,
+        choices = choices, choicesOpt = opts)
     })
     
     runnable <- reactive({
@@ -159,7 +159,7 @@ ffseaRunServer <- function(id, rfds, aresult, gdb, ..., debug = FALSE) {
     observe({
       runnable. <- runnable()
       ftrace("runnable: ", as.character(runnable.))
-      toggleState("runbtn", condition = runnable.)
+      shinyjs::toggleState("runbtn", condition = runnable.)
     })
     
     observe({
@@ -187,7 +187,7 @@ ffseaRunServer <- function(id, rfds, aresult, gdb, ..., debug = FALSE) {
       
       args <- c(gdb.args, methods, method.args)
       
-      withProgress({
+      shiny::withProgress({
         do.call(ffsea, args)
       }, message = "Running Enrichment Analysis")
     })
@@ -207,23 +207,24 @@ ffseaRunServer <- function(id, rfds, aresult, gdb, ..., debug = FALSE) {
 
 #' @noRd
 #' @export
-#' @importFrom shinyWidgets pickerInput
-#' @importFrom shiny actionButton column fluidRow tags tagList
 ffseaRunUI <- function(id, ..., debug = FALSE) {
-  ns <- NS(id)
+  ns <- shiny::NS(id)
 
-  tagList(
-    fluidRow(
-      column(
-        4,
-        pickerInput(ns("ffsea_methods"), "Methods", choices = NULL,
-                    multiple = TRUE)),
-      column(
-        1,
-        tags$div(
+  shiny::tagList(
+    shiny::fluidRow(
+      shiny::column(
+        width = 4,
+        shinyWidgets::pickerInput(
+          ns("ffsea_methods"), "Methods", choices = NULL, multiple = TRUE)),
+      shiny::column(
+        width = 1,
+        shiny::tags$div(
           style = "padding-top: 1.7em",
           ffseaRunOptsUI(ns("runopts"), width = "350px"))),
-      column(1, actionButton(ns("runbtn"), "Run", style = "margin-top: 1.7em"))
+      shiny::column(
+        width = 1, 
+        shiny::actionButton(
+          ns("runbtn"), "Run", style = "margin-top: 1.7em"))
     )
   )
 }
@@ -234,7 +235,6 @@ ffseaRunUI <- function(id, ..., debug = FALSE) {
 #'
 #' @noRd
 #' @export
-#' @importFrom shiny observeEvent reactiveValues validate
 #' @param rfds the reactive facile data store
 #' @param ares The `FacileFseaAnalysisResult`
 ffseaViewServer <- function(id, rfds, aresult, ..., debug = FALSE) {
@@ -271,10 +271,10 @@ ffseaViewServer <- function(id, rfds, aresult, ..., debug = FALSE) {
       "mg_result_filter", mgc)
   
     # Overview Tab ...............................................................
-    output$gseaMethodSummary <- renderUI({
+    output$gseaMethodSummary <- shiny::renderUI({
       mgc. <- req(mgc())
-      tagList(
-        tags$h4("GSEA Analyses Overview"),
+      shiny::tagList(
+        shiny::tags$h4("GSEA Analyses Overview"),
         sparrow.shiny::summaryHTMLTable.sparrow(
           mgc.$sr, mgc.$methods,
           gs_result_filter$fdr(),
@@ -302,8 +302,8 @@ ffseaViewServer <- function(id, rfds, aresult, ..., debug = FALSE) {
     observeEvent(gs_table_browser$selected(), {
       .mgc <- req(mgc())
       geneset <- req(gs_table_browser$selected())
-      sparrow.shiny::updateActiveGeneSetInContrastView(session, gs_viewer,
-                                                       geneset, .mgc)
+      sparrow.shiny::updateActiveGeneSetInContrastView(
+        session, gs_viewer, geneset, .mgc)
     })
   
     # A table of other genesets that brushed genes in the contrast viewer
@@ -327,31 +327,32 @@ ffseaViewServer <- function(id, rfds, aresult, ..., debug = FALSE) {
 
 #' @noRd
 #' @export
-#' @importFrom shiny fluidRow NS tags uiOutput wellPanel
 ffseaViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
-  ns <- NS(id)
+  ns <- shiny::NS(id)
 
-  tagList(
+  shiny::tagList(
     # wellPanel(mgResultFilterUI(ns("mg_result_filter"))),
 
-    tags$div(
+    shiny::tags$div(
       style="margin-bottom: 10px; padding: 5px; background-color: white",
       title='GSEA Results',
-      uiOutput(ns("gseaMethodSummary"))),
+      shiny::uiOutput(ns("gseaMethodSummary"))),
 
-    fluidRow(
-      column(
-        5, style = "padding: 0",
+    shiny::fluidRow(
+      shiny::column(
+        width = 5,
+        style = "padding: 0",
         sparrow.shiny::mgResultFilterUI(ns("mg_result_filter")),
-        wellPanel(sparrow.shiny::geneSetContrastViewUI(ns("geneset_viewer")))),
-      column(
-        7,
+        shiny::wellPanel(
+          sparrow.shiny::geneSetContrastViewUI(ns("geneset_viewer")))),
+      shiny::column(
+        width = 7,
         sparrow.shiny::mgTableBrowserUI(ns("mg_table_browser")))),
 
-    fluidRow(
-      column(
-        12,
-        tags$h4("Other Gene Sets with Selected Genes"),
+    shiny::fluidRow(
+      shiny::column(
+        width = 12,
+        shiny::tags$h4("Other Gene Sets with Selected Genes"),
         sparrow.shiny::mgGeneSetSummaryByGeneUI(ns("other_genesets_gsea"))))
   )
 }

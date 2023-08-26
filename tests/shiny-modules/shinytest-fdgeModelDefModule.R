@@ -12,12 +12,16 @@ ignore <- NULL
 
 shiny::shinyApp(
   ui = shiny::fluidPage(
-    # shiny::wellPanel(filteredReactiveFacileDataStoreUI("ds")),
-    # reactiveFacileDataStoreUI("rfds"),
-    FacileShine::facileSampleFiltersSelectInput("rfds"),
-    shiny::tags$h2("fdgeModelDef"),
-    flmDefRunUI("model", debug = TRUE),
-    NULL),
+    shiny::fluidRow(
+      shiny::column(
+        width = 3,
+        shiny::wellPanel(
+          FacileShine::facileSampleFiltersSelectInput("rfds"))),
+      shiny::column(
+        width = 9,
+        shiny::tags$h2("fdgeModelDef"),
+        flmDefRunUI("model", debug = TRUE)))),
+  
   server = function(input, output) {
     rfds <- FacileShine::facileDataStoreServer(
       "rfds", shiny::reactive(efds),

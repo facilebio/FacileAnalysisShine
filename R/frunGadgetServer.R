@@ -36,8 +36,13 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
   
   sample.filter <- sample.filter || with_sample_filter
   xtra_covariates <- setdiff(colnames(samples.), c("dataset", "sample_id"))
+  # if (length(xtra_covariates)) {
+  #   xtra_covariates <- as.EAVtable(samples.)
+  # } else {
+  #   xtra_covariates <- NULL
+  # }
   if (length(xtra_covariates)) {
-    xtra_covariates <- as.EAVtable(samples.)
+    xtra_covariates <- samples.
   } else {
     xtra_covariates <- NULL
   }
@@ -47,10 +52,14 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
   
   ui.content <- analysisUI("analysis", ..., debug = debug)
   if (sample.filter) {
-    ui.content <- tagList(
-      FacileShine::filteredReactiveFacileDataStoreUI("ds"),
-      tags$hr(),
-      ui.content)
+    ui.content <- shiny::fluidRow(
+      shiny::column(
+        width = 3,
+        shiny::wellPanel(
+          FacileShine::facileSampleFiltersSelectInput("rfds", debug = debug))),
+      shiny::column(
+        width = 9,
+        ui.content))
   }
   
   ui <- miniUI::miniPage(
@@ -61,8 +70,11 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
     NULL)
   
   server <- function(input, output, session) {
-    rfds <- FacileShine::ReactiveFacileDataStore(fds., "ds", user = user,
-                                                 samples = samples.)
+    # rfds <- FacileShine::ReactiveFacileDataStore(fds., "ds", user = user,
+    #                                              samples = samples.)
+    rfds <- FacileShine::facileDataStoreServer(
+      "rfds", fds., samples_subset = reactive(samples.))
+    
     analysis <- modServer("analysis", rfds, ..., debug = debug)
     
     if (!is.null(xtra_covariates)) {

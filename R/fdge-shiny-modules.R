@@ -58,8 +58,6 @@ fdgeGadget <- function(x, title = "Differential Expression Analysis",
 #' This module can be embedded within a shiny app, or called from a gadget.
 #'
 #' @export
-#' @importFrom shiny callModule
-#' @importFrom shinyjs toggleElement
 #' @return a `ReactiveFacileDgeAnalysisResult`, the output from [fdge()]
 fdgeAnalysisServer <- function(id, rfds, ..., debug = FALSE) {
   assert_class(rfds, "ReactiveFacileDataStore")
@@ -77,7 +75,7 @@ fdgeAnalysisServer <- function(id, rfds, ..., debug = FALSE) {
     observe({
       res. <- req(faro(dge))
       show <- is(res., "FacileDgeAnalysisResult")
-      toggleElement("viewbox", condition = show)
+      shinyjs::toggleElement("viewbox", condition = show)
     })
     
     vals <- list(
@@ -100,25 +98,26 @@ fdgeAnalysisServer <- function(id, rfds, ..., debug = FALSE) {
 #'   tagList
 #'   tags
 #'   wellPanel
-#' @importFrom shinydashboard box
-#' @importFrom shinyjs hidden
 fdgeAnalysisUI <- function(id, ..., debug = FALSE,
                            bs4dash = isTRUE(getOption("facile.bs4dash"))) {
-  ns <- NS(id)
-  # box. <- if (bs4dash) bs4Dash::bs4Box else shinydashboard::box
+  ns <- shiny::NS(id)
   box. <- shinydashboard::box
-  tagList(
-    tags$div(id = ns("modelbox"),
-             box.(title = "Model Definition", width = 12,
-                  flmDefRunUI(ns("model"), debug = debug))),
-    tags$div(id = ns("dgebox"),
-             box.(title = "Testing Parameters", width = 12,
-                  fdgeRunUI(ns("dge"), debug = debug))),
-    hidden(tags$div(id = ns("viewbox"),
-                    box.(title = NULL, #"Testing Results",
-                         solidHeader = TRUE,
-                         width = 12,
-                         fdgeViewUI(ns("view"), debug = debug)))))
+  shiny::tagList(
+    shiny::tags$div(
+      id = ns("modelbox"),
+      box.(title = "Model Definition", width = 12,
+           flmDefRunUI(ns("model"), debug = debug))),
+    shiny::tags$div(
+      id = ns("dgebox"),
+      box.(title = "Testing Parameters", width = 12,
+           fdgeRunUI(ns("dge"), debug = debug))),
+    shinyjs::hidden(
+      shiny::tags$div(
+        id = ns("viewbox"),
+        box.(title = NULL, #"Testing Results",
+             solidHeader = TRUE,
+             width = 12,
+             fdgeViewUI(ns("view"), debug = debug)))))
 }
 
 # Run ==========================================================================
@@ -126,15 +125,6 @@ fdgeAnalysisUI <- function(id, ..., debug = FALSE,
 #' Shiny module to configure and run fdge over a predefined model.
 #'
 #' @export
-#' @importFrom shiny
-#'   callModule
-#'   eventReactive
-#'   reactive
-#'   renderText
-#'   withProgress
-#' @importFrom shinyjs toggleState
-#' @importFrom FacileShine assaySelect
-#' @importFrom FacileViz unselected
 #' 
 #' @param id namespace for module
 #' @param model A linear model definition. Can be either an "innert"
@@ -151,7 +141,7 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
   assert_class(model, "FacileLinearModelDefinition")
   
   shiny::moduleServer(id, function(input, output, session) {
-    assay <- callModule(assaySelect, "assay", rfds, .reactive = .reactive)
+    assay <- FacileShine::assaySelectServer("assay", rfds)
     runopts <- callModule(fdgeRunOptions, "runopts", rfds, model, assay, ...)
     
     runnable <- reactive({
@@ -164,7 +154,7 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
     
     dge <- eventReactive(input$run, {
       req(runnable())
-      assay_name. <- assay$assay_info()$assay
+      assay_name. <- assay$assay_name()
       flm <- unreact(faro(model))
       withProgress({
         fdge(flm, assay_name = assay_name.,
@@ -204,39 +194,28 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
 
 #' @noRd
 #' @export
-#' @importFrom FacileShine
-#'   assaySelectUI
-#' @importFrom shiny
-#'   actionButton
-#'   checkboxInput
-#'   column
-#'   fluidRow
-#'   icon
-#'   NS
-#'   numericInput
-#'   selectInput
-#'   tagList
-#'   tags
-#'   verbatimTextOutput
-#'   wellPanel
 fdgeRunUI <- function(id, ..., debug = FALSE) {
-  ns <- NS(id)
-  out <- tagList(
-    fluidRow(
-      column(3, assaySelectUI(ns("assay"), choices = NULL)),
-      column(
-        1,
-        tags$div(
+  ns <- shiny::NS(id)
+  out <- shiny::tagList(
+    shiny::fluidRow(
+      shiny::column(
+        width = 3, 
+        FacileShine::assaySelectInput(ns("assay"), choices = NULL)),
+      shiny::column(
+        width = 1,
+        shiny::tags$div(
           style = "padding-top: 1.7em",
           fdgeRunOptionsUI(ns("runopts"), width = "300px"))),
-      column(1, actionButton(ns("run"), "Run", style = "margin-top: 1.7em"))
+      shiny::column(
+        width = 1,
+        shiny::actionButton(ns("run"), "Run", style = "margin-top: 1.7em"))
     ))
 
   if (debug) {
-    out <- tagList(
+    out <- shiny::tagList(
       out,
-      tags$hr(),
-      verbatimTextOutput(ns("debug"), placeholder = TRUE))
+      shiny::tags$hr(),
+      shiny::verbatimTextOutput(ns("debug"), placeholder = TRUE))
   }
 
   out
@@ -264,11 +243,6 @@ fdge.ReactiveFacileLinearModelDefinition <- function(x, assay_name = NULL,
 #' module.
 #'
 #' @export
-#' @importFrom DT datatable dataTableProxy formatRound renderDT replaceData
-#' @importFrom plotly event_data layout
-#' @importFrom shiny downloadHandler req
-#' @importFrom shinyjs hide show toggleElement
-#' @importFrom shinyWidgets updateSwitchInput
 #' @param dgeres The result from calling [fdge()], or [fdgeRun()].
 fdgeViewServer <- function(id, rfds, dgeres, ...,
                            feature_selection = NULL,
@@ -304,19 +278,19 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     # Trigger that UI restting/cleanup work here.
     observeEvent(dge(), {
       # Hide volcanobox completely if new dge is not a ttest
-      toggleElement("volcanobox", condition = is_ttest(dge()))
+      shinyjs::toggleElement("volcanobox", condition = is_ttest(dge()))
       # New results should turn off the volcano toggleSwitch if it is a ttest
-      updateSwitchInput(session, "volcanotoggle", value = FALSE)
+      shinyWidgets::updateSwitchInput(session, "volcanotoggle", value = FALSE)
     }, priority = 5) # upping priority so some withProgress things hide quick
   
     # When the volcano boxplot is turned off (toggle is set to FALSE), nuke
     # any active selection
     observeEvent(input$volcanotoggle, {
       if (input$volcanotoggle) {
-        show("volcanoplotdiv")
+        shinyjs::show("volcanoplotdiv")
       } else {
         state$volcano_select <- tibble(feature_id = character())
-        hide("volcanoplotdiv")
+        shinyjs::hide("volcanoplotdiv")
       }
     }, priority = 5)
   
@@ -348,12 +322,14 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     })
   
     observe({
-      toggleElement("dlbuttonbox", condition = is(dge.stats.all(), "data.frame"))
+      shinyjs::toggleElement(
+        "dlbuttonbox", 
+        condition = is(dge.stats.all(), "data.frame"))
     })
   
     # Visualization of DGE results -----------------------------------------------
   
-    output$volcano <- renderPlotly({
+    output$volcano <- plotly::renderPlotly({
       plt <- NULL
       show <- input$volcanotoggle
       if (is_ttest(dge()) && show) {
@@ -379,8 +355,12 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     # Responds to selection events on the volcano plot. If no selection is active,
     # this is NULL, otherwise its the character vector of the "feature_id" values
     # that are brushed in the plot.
-    observeEvent(event_data("plotly_selected", source = feature_selection), {
-      selected <- event_data("plotly_selected", source = feature_selection)
+    observeEvent({
+      plotly::event_data("plotly_selected", source = feature_selection)
+    } , {
+      selected <- plotly::event_data(
+        "plotly_selected", 
+        source = feature_selection)
       if (is.null(selected)) {
         selected <- character()
       } else {
@@ -423,24 +403,29 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     observe({
       enable_toggle <- batch_corrected()
       if (!enable_toggle) {
-        updateSwitchInput(session, "batch_correct", value = FALSE)
+        shinyWidgets::updateSwitchInput(session, "batch_correct", value = FALSE)
       }
-      toggleElement("batch_correct_container", condition = enable_toggle)
+      shinyjs::toggleElement(
+        "batch_correct_container", 
+        condition = enable_toggle)
     })
   
-    featureviz <- eventReactive(list(selected_result(), input$batch_correct), {
+    featureviz <- eventReactive({
+      selected_result()
+      input$batch_correct
+    }, {
       dge. <- req(dge())
       bc <- batch_corrected() && input$batch_correct
       feature <- req(selected_result())
       viz(dge., feature, event_source = sample_selection, batch_correct = bc)
     })
   
-    output$boxplot <- renderPlotly({
+    output$boxplot <- plotly::renderPlotly({
       plt <- req(featureviz())
       plot(plt)
     })
   
-    output$boxplotdl <- downloadHandler(
+    output$boxplotdl <- shiny::downloadHandler(
       filename = function() {
         feature <- req(selected_result())
         req(nrow(feature) == 1L)
@@ -467,8 +452,11 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     # Responds to sample-selection events on the boxplot. If no selection is
     # active, this is NULL, otherwise it's <dataset>__<sample_id>-pastd
     # compound key
-    observeEvent(event_data("plotly_selected", source = sample_selection), {
-      selected <- event_data("plotly_selected", source = sample_selection)
+    observeEvent({
+      plotly::event_data("plotly_selected", source = sample_selection)
+    }, {
+      selected <- plotly::event_data(
+        "plotly_selected", source = sample_selection)
       if (is.null(selected)) {
         selected <- tibble(dataset = character(), sample_id = character())
       } else {
@@ -487,17 +475,20 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
   
     # Stats Table ----------------------------------------------------------------
   
-    output$statsdl <- downloadHandler(
+    output$statsdl <- shiny::downloadHandler(
       filename = function() {
         res <- req(isolate(dge()))
         test_type <- if (is_ttest(res)) "ttest" else "anova"
         is.selected <- if (nrow(state$volcano_select)) "subset" else "all"
-        sprintf("DGE-%s_%s_%s_%s.csv", param(res, "method"), test_type, name(res),
-                is.selected)
+        sprintf(
+          "DGE-%s_%s_%s_%s.csv",
+          param(res, "method"),
+          test_type,
+          name(res),
+          is.selected)
       },
       content = function(file) {
         .fdge <- req(isolate(dge()))
-        # .result <- ranks(.fdge) |> result()
         .result <- req(dge.stats())
         if ("padj" %in% colnames(.result)) {
           .result <- rename(.result, FDR = "padj")
@@ -528,20 +519,16 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
                      lengthMenu = c(15, 30, 50))
   
       dtable <- dat |>
-        datatable(filter = "top",
-                  # extensions = "Scroller",
-                  style = "bootstrap",
-                  class = "display", width = "100%", rownames = FALSE,
-                  selection = list(mode = "single", selected = 1, target = "row"),
-                  options = dtopts) |>
-        formatRound(num.cols, 3)
+        DT::datatable(
+          filter = "top",
+          # extensions = "Scroller",
+          style = "bootstrap",
+          class = "display", width = "100%", rownames = FALSE,
+          selection = list(mode = "single", selected = 1, target = "row"),
+          options = dtopts) |>
+        DT::formatRound(num.cols, 3)
       dtable
     }, server = TRUE)
-    # dtproxy <- dataTableProxy("stats")
-    # observe({
-    #   stats. <- req(dge.stats())
-    #   replaceData(dtproxy, stats., resetPaging = FALSE)
-    # })
   
     vals <- list(
       selected_features = reactive(state$volcano_select),
@@ -555,54 +542,59 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
 #' @export
 #' @param rmd set to `TRUE` if you are embedding the widged in a
 #'   `runtime: shiny` Rmd.
-#' @importFrom DT DTOutput
-#' @importFrom plotly plotlyOutput
-#' @importFrom shiny column downloadButton fluidRow NS
-#' @importFrom shinyjs hidden
-#' @importFrom shinydashboard box
-#' @importFrom shinycssloaders withSpinner
-#' @importFrom shinyWidgets switchInput
 fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
-  ns <- NS(id)
+  ns <- shiny::NS(id)
   box <- shinydashboard::box
 
-  withSpinner <- if (rmd) identity else shinycssloaders::withSpinner
+  if (rmd) {
+    withSpinner <- identity 
+  } else {
+    withSpinner <- function(x) {
+      shinyWidgets::addSpinner(
+        x,
+        spin = getOption("FacileShine.spinner_type"),
+        color = getOption("FacileShine.spinner_color"))
+    }
+  }
 
-  volcano.box <- tags$div(
+  volcano.box <- shiny::tags$div(
     style = "margin-top: 10px",
     id = ns("volcanobox"),
     box(
       width = 12, style = "padding-top: 10px",
-      switchInput(ns("volcanotoggle"), size = "mini",
-                  onLabel = "Yes", offLabel = "No", value = FALSE,
-                  inline = TRUE),
-      tags$span("Volcano Plot", style = "font-weight: bold"),
-      tags$div(
+      shinyWidgets::switchInput(
+        ns("volcanotoggle"), 
+        size = "mini",
+        onLabel = "Yes", offLabel = "No", value = FALSE,
+        inline = TRUE),
+      shiny::tags$span("Volcano Plot", style = "font-weight: bold"),
+      shiny::tags$div(
         id = ns("volcanoplotdiv"),
-        withSpinner(plotlyOutput(ns("volcano"))))))
+        withSpinner(plotly::plotlyOutput(ns("volcano"))))))
 
   boxplot.box <- box(
     width = 12,
     id = ns("boxplotbox"),
     shinyjs::hidden(
-      tags$div(
+      shiny::tags$div(
         id = ns("batch_correct_container"),
-        switchInput(ns("batch_correct"), size = "mini",
-                    onLabel = "Yes", offLabel = "No", value = TRUE,
-                    inline = TRUE),
-        tags$span("Batch Correction", style = "font-weight: bold"))),
-    withSpinner(plotlyOutput(ns("boxplot"))))
+        shinyWidgets::switchInput(
+          ns("batch_correct"), size = "mini",
+          onLabel = "Yes", offLabel = "No", value = TRUE,
+          inline = TRUE),
+        shiny::tags$span("Batch Correction", style = "font-weight: bold"))),
+    withSpinner(plotly::plotlyOutput(ns("boxplot"))))
 
-  fluidRow(
+  shiny::fluidRow(
     # Plots Column
-    column(
+    shiny::column(
       width = 5,
       id = ns("vizcolumn"),
       boxplot.box,
-      downloadButton(ns("boxplotdl"), "Download Data"),
+      shiny::downloadButton(ns("boxplotdl"), "Download Data"),
       volcano.box),
     # Stats Table Column
-    column(
+    shiny::column(
       width = 7,
       id = ns("statscolumn"),
       # style = "padding: 2px; margin: 5px",
@@ -610,10 +602,10 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
         width = 12,
         id = ns("statbox"),
         title = "Statistics",
-        tags$div(
+        shiny::tags$div(
           id = ns("dlbuttonbox"),
           style = "padding: 0 0 1em 0; float: right;",
-          downloadButton(ns("statsdl"), "Download")),
-        tags$div(style = "clear: right;"),
+          shiny::downloadButton(ns("statsdl"), "Download")),
+        shiny::tags$div(style = "clear: right;"),
         withSpinner(DT::DTOutput(ns("stats"))))))
 }

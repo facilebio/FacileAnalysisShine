@@ -53,9 +53,14 @@ fpcaAnalysisServer <- function(id, rfds, ..., debug = FALSE) {
 #' @importFrom shinyjs hidden
 fpcaAnalysisUI <- function(id, ..., debug = FALSE) {
   ns <- NS(id)
-  tagList(
-    tags$div(id = ns("runbox"), fpcaRunUI(ns("pca"), debug = debug)),
-    hidden(tags$div(id = ns("viewbox"), fpcaViewUI(ns("view"), debug = debug))))
+  shiny::tagList(
+    shiny::tags$div(
+      id = ns("runbox"), 
+      fpcaRunUI(ns("pca"), debug = debug)),
+    shinyjs::hidden(
+      shiny::tags$div(
+        ns("viewbox"), 
+        fpcaViewUI(ns("view"), debug = debug))))
 }
 
 # Run PCA ======================================================================
@@ -63,38 +68,18 @@ fpcaAnalysisUI <- function(id, ..., debug = FALSE) {
 #' Minimal shiny module to run fpca
 #'
 #' @export
-#' @importFrom FacileShine
-#'   active_samples
-#'   assaySelect
-#'   batchCorrectConfig
-#'   initialized
-#'   user
-#' @importFrom shiny
-#'   callModule
-#'   eventReactive
-#'   req
-#'   updateNumericInput
-#'   withProgress
-#' @importFrom shinyjs toggleState
-fpcaRunServer <- function(id, rfds, ..., debug = FALSE, .reactive = TRUE) {
+fpcaRunServer <- function(id, rfds, ..., debug = FALSE) {
   # Provide user with inputs to control:
   # 1. Assay to run PCA on
   # 2. Number of PCs to calculate
   # 3. Number of top varying features to keep
   assert_class(rfds, "ReactiveFacileDataStore")
   shiny::moduleServer(id, function(input, output, session) {
-    isolate. <- if (.reactive) base::identity else shiny::isolate
-    
-    active.samples <- reactive({
-      req(initialized(rfds))
-      # isolate.(active_samples(rfds))
-      ftrace("Updating active samples")
-      active_samples(rfds)
-    })
-    
-    batch <- callModule(batchCorrectConfig, "batch", rfds)
-    assay <- callModule(assaySelect, "assay", rfds)
-    runopts <- callModule(fpcaRunOptions, "runopts", assay, active.samples)
+  
+    batch <- FacileShine::batchCorrectConfigServer("batch", rfds, debug = debug)
+    assay <- FacileShine::assaySelectServer("assay", rfds)
+
+    runopts <- callModule(fpcaRunOptions, "runopts", assay, rfds$active_samples)
     
     runnable <- reactive({
       req(initialized(rfds) && initialized(runopts))
@@ -106,8 +91,8 @@ fpcaRunServer <- function(id, rfds, ..., debug = FALSE, .reactive = TRUE) {
     
     result <- eventReactive(input$run, {
       req(runnable())
-      samples. <- active.samples()
-      assay_name <- assay$assay_info()$assay
+      samples. <- rfds$active_samples()
+      assay_name <- assay$assay_name()
       
       features. <- runopts$feature_universe()
       pcs <- runopts$npcs()
@@ -116,8 +101,8 @@ fpcaRunServer <- function(id, rfds, ..., debug = FALSE, .reactive = TRUE) {
       
       batch. <- name(batch$batch)
       main. <- name(batch$main)
-      
-      withProgress({
+
+      shiny::withProgress({
         these <- unreact(samples.)
         fpca(these, dims = pcs, ntop = ntop, assay_name = assay_name,
              features = features., filter = "variance",
@@ -139,32 +124,27 @@ fpcaRunServer <- function(id, rfds, ..., debug = FALSE, .reactive = TRUE) {
 
 #' @noRd
 #' @export
-#' @importFrom FacileShine
-#'   assaySelectUI
-#'   batchCorrectConfigUI
-#' @importFrom shiny
-#'   actionButton
-#'   column
-#'   fluidRow
-#'   NS
-#'   numericInput
-#'   tagList
-#' @importFrom shinyWidgets dropdown pickerInput
 fpcaRunUI <- function(id, width_opts = "200px", ..., debug = FALSE) {
   ns <- NS(id)
   # 1. Assay to run PCA on
   # 2. Number of PCs to calculate
   # 3. Number of top varying features to
-  out <- tagList(
-    fluidRow(
-      column(3, assaySelectUI(ns("assay"), label = "Assay", choices = NULL)),
-      column(4, batchCorrectConfigUI(ns("batch"), direction = "horizontal")),
-      column(
-        1,
-        tags$div(
+  out <- shiny::tagList(
+    shiny::fluidRow(
+      shiny::column(
+        width = 3, 
+        FacileShine::assaySelectInput(ns("assay"), label = "Assay", choices = NULL)),
+      shiny::column(
+        width = 4, 
+        FacileShine::batchCorrectConfigUI(ns("batch"), direction = "horizontal")),
+      shiny::column(
+        width = 1,
+        shiny::tags$div(
           style = "padding-top: 1.7em",
           fpcaRunOptionsUI(ns("runopts"), width = "300px"))),
-      column(1, actionButton(ns("run"), "Run"), style = "margin-top: 1.7em")
+      shiny::column(
+        width = 1, 
+        shiny::actionButton(ns("run"), "Run"), style = "margin-top: 1.7em")
     ))
 }
 
@@ -172,15 +152,6 @@ fpcaRunUI <- function(id, width_opts = "200px", ..., debug = FALSE) {
 
 #' @noRd
 #' @export
-#' @importFrom FacileShine
-#'   initialized
-#'   categoricalAestheticMap
-#' @importFrom plotly
-#'   renderPlotly
-#' @importFrom shiny
-#'   isolate
-#'   reactive
-#'   req
 fpcaViewServer <- function(id, rfds, pcares, ...,
                      feature_selection = session$ns("features"),
                      sample_selection = session$ns("samples"),
@@ -196,7 +167,9 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
       shape_aes = NULL,
       facet_aes = NULL,
       hover = NULL,
-      scatter_select = tibble(assay_name = character(), feature_id = character()))
+      scatter_select = tibble(
+        assay_name = character(), 
+        feature_id = character()))
     
     pca <- reactive({
       req(initialized(pcares))
@@ -221,11 +194,13 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
       components <- req(pcs_calculated())
       pcs <- setNames(components$index, components$label)
       
-      updateSelectInput(session, "xaxis", choices = pcs, selected = pcs[1])
-      updateSelectInput(session, "yaxis", choices = pcs, selected = pcs[2])
-      updateSelectInput(session, "zaxis", choices = c("---", pcs), selected = "")
+      shiny::updateSelectInput(session, "xaxis", choices = pcs, selected = pcs[1])
+      shiny::updateSelectInput(session, "yaxis", choices = pcs, selected = pcs[2])
+      shiny::updateSelectInput(session, "zaxis", choices = c("---", pcs), 
+                               selected = "")
       
-      updateSelectInput(session, "loadingsPC", choices = pcs, selected = pcs[1L])
+      shiny::updateSelectInput(session, "loadingsPC", 
+                               choices = pcs, selected = pcs[1L])
     }, priority = 5) # upping priority so some withProgress things hide quick
     
     assay_name. <- reactive(param(req(pca()), "assay_name"))
@@ -236,9 +211,9 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
       !is.null(batch)
     })
     
-    aes <- callModule(categoricalAestheticMap, "aes", rfds,
-                      color = TRUE, shape = TRUE, group = FALSE, facet = TRUE,
-                      hover = TRUE, ..., debug = debug)
+    aes <- FacileShine::categoricalAestheticMapServer(
+      "aes", rfds, color = TRUE, shape = TRUE, group = FALSE, facet = TRUE,
+      hover = TRUE, ..., debug)    
     
     # Color Mapping ..............................................................
     # This will be painful. Let's enable the PCA plot to be colored by a
@@ -282,7 +257,6 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
       axes <- as.integer(axes)
       req(length(axes) >= 2)
       
-      aes.map <- aes$map()
       acolor <- state$color_aes
       ashape <- state$shape_aes
       afacet <- state$facet_aes
@@ -304,7 +278,7 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
           facet_aes = afacet, width = NULL, height = 550)
     })
     
-    output$pcaplot <- renderPlotly({
+    output$pcaplot <- plotly::renderPlotly({
       plot(req(pcaviz()))
     })
     
@@ -331,48 +305,53 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
       pc.dat <- pc.loadings()
       num.cols <- colnames(pc.dat)[sapply(pc.dat, is.numeric)]
       
-      dt <- datatable(pc.dat, filter = "top",
-                      style = "bootstrap",
-                      class = "display", width = "100%", rownames = FALSE,
-                      selection = "single",
-                      options = dtopts)
-      formatRound(dt, num.cols, 3)
+      dt <- DT::datatable(
+        pc.dat, filter = "top",
+        style = "bootstrap",
+        class = "display", width = "100%", rownames = FALSE,
+        selection = "single",
+        options = dtopts)
+      DT::formatRound(dt, num.cols, 3)
     }, server = TRUE)
   })
 }
 
 #' @noRd
 #' @export
-#' @importFrom FacileShine categoricalAestheticMapUI
-#' @importFrom plotly plotlyOutput
-#' @importFrom shiny NS
-#' @importFrom shinycssloaders withSpinner
 fpcaViewUI <- function(id, ..., debug = FALSE) {
-  ns <- NS(id)
-  tagList(
-    tags$h4(
-      tags$span("PCA Result", style = "background: #fff; padding: 0 10px 0 0"),
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    shiny::tags$h4(
+      shiny::tags$span(
+        "PCA Result", style = "background: #fff; padding: 0 10px 0 0"),
       style = "border-bottom: 1px solid #000; line-height: 0.1em; margin-bottom: 13px"),
-    fluidRow(
-      column(
-        7,
-        fluidRow(
-          column(4, selectInput(ns("xaxis"), "X axis", choices = NULL)),
-          column(4, selectInput(ns("yaxis"), "Y axis", choices = NULL)),
-          column(4, selectInput(ns("zaxis"), "Z axis", choices = NULL))),
-        fluidRow(
-          column(
-            12,
-            wellPanel(
-              categoricalAestheticMapUI(
+    shiny::fluidRow(
+      shiny::column(
+        width = 7,
+        shiny::fluidRow(
+          shiny::column(4, shiny::selectInput(ns("xaxis"), "X axis", choices = NULL)),
+          shiny::column(4, shiny::selectInput(ns("yaxis"), "Y axis", choices = NULL)),
+          shiny::column(4, shiny::selectInput(ns("zaxis"), "Z axis", choices = NULL))),
+        shiny::fluidRow(
+          shiny::column(
+            width = 12,
+            shiny::wellPanel(
+              FacileShine::categoricalAestheticMapInput(
                 ns("aes"),
                 color = TRUE, shape = TRUE, facet = TRUE, hover = TRUE,
                 group = FALSE)))),
-        plotlyOutput(ns("pcaplot"))),
-      column(
-        5,
-        tags$h4("Feature Loadings"),
-        tags$div(selectInput(ns("loadingsPC"), "Principal Component",
+        plotly::plotlyOutput(ns("pcaplot"))),
+      shiny::column(
+        width = 5,
+        shiny::tags$h4("Feature Loadings"),
+        shiny::tags$div(
+          shiny::selectInput(ns("loadingsPC"), "Principal Component",
                              choices = NULL)),
-        withSpinner(DT::DTOutput(ns("loadings"), height = "650px")))))
+        # TODO: Add a download table button
+        # shinyWidgets::addSpinner(
+        DT::DTOutput(ns("loadings"), height = "650px"),
+        spin = getOption("FacileShine.spinner_type"),
+        color = getOption("FacileShine.spinner_color")
+        # )
+      )))
 }

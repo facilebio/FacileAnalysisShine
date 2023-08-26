@@ -8,12 +8,6 @@
 #' ```
 #'
 #' @export
-#' @importFrom FacileShine
-#'   active_samples
-#'   categoricalSampleCovariateSelect
-#'   categoricalSampleCovariateLevels
-#'   initialized
-#'   update_exclude
 #' @importFrom shiny renderText
 #' @importFrom shinyjs toggleElement
 #' @return A `ReactiveFacileLinearModelDefinition` object, the output from
@@ -84,7 +78,7 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
     observeEvent(status.(), {
       s <- status.()
       iserr <- is(s, "FacileAnalysisStatusError")
-      toggleElement("messagebox", condition = !iserr)
+      shinyjs::toggleElement("messagebox", condition = !iserr)
       if (iserr) {
         shinyWidgets::sendSweetAlert(session, "Error building model",
                                      text = s, type = "error")
@@ -125,48 +119,46 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
 
 #' @noRd
 #' @export
-#' @importFrom FacileShine
-#'   categoricalSampleCovariateSelectUI
-#'   categoricalSampleCovariateLevelsUI
-#' @importFrom shiny textOutput wellPanel
-#' @importFrom shinyjs hidden
 flmDefRunUI <- function(id, ..., debug = FALSE) {
-  ns <- NS(id)
+  ns <- shiny::NS(id)
 
-  out <- tagList(
-    fluidRow(
-      column(
+  out <- shiny::tagList(
+    shiny::fluidRow(
+      shiny::column(
         width = 2,
         FacileShine::categoricalSampleCovariateSelectInput(
           ns("testcov"),
           label = "Group to test",
           multiple = FALSE)),
-      column(
+      shiny::column(
         width = 4,
         FacileShine::categoricalSampleCovariateLevelsSelectInput(
           ns("numer"),
           label = "Numerator",
           multiple = TRUE)),
-      column(
+      shiny::column(
         width = 4,
         FacileShine::categoricalSampleCovariateLevelsSelectInput(
           ns("denom"),
           label = "Denominator",
           multiple = TRUE)),
-      column(
+      shiny::column(
         width = 2,
         FacileShine::categoricalSampleCovariateSelectInput(
           ns("batchcov"),
           label = "Control for",
           multiple = TRUE))),
-    hidden(wellPanel(id = ns("messagebox"), textOutput(ns("message"))))
+    shinyjs::hidden(
+      shiny::wellPanel(
+        id = ns("messagebox"), 
+        shiny::textOutput(ns("message"))))
   )
 
   if (debug) {
-    out <- tagList(
+    out <- shiny::tagList(
       out,
       shiny::verbatimTextOutput(ns("debug"), placeholder = TRUE))
   }
-
+  
   out
 }
