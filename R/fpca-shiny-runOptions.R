@@ -2,7 +2,7 @@
 fpcaRunOptionsUI <- function(id, width = "300px", ..., debug = FALSE) {
   ns <- shiny::NS(id)
   shinyWidgets::dropdown(
-    inputId = ns("opts"),
+    ns("opts"),
     icon = shiny::icon("sliders"),
     status = "primary", circle = FALSE,
     width = width,
@@ -26,37 +26,39 @@ fpcaRunOptionsUI <- function(id, width = "300px", ..., debug = FALSE) {
 
 #' @noRd
 #' @param rfds the current reactivefaciledatastore
-#' @param assaySelect the FacileShine::assaySelect module which defines the
+#' @param assay the FacileShine::assaySelect module which defines the
 #'   current assay the pca will be run over.
 #' @param asamples a reactive data.frame that enumerates the active samples the
 #'   PCA will be run on
-fpcaRunOptions <- function(input, output, session, assaySelect, asamples,
-                           ...) {
+fpcaRunOptions <- function(input, output, session, rfds, assay, ...) {
   
   # Set the maximum number of PCs such that they do not exceed number of samples
   # Running PCA is also disabled if there are less than three samples.
-  observeEvent(asamples(), {
-    asamples. <- req(asamples())
+  observeEvent(rfds$active_samples(), {
+    asamples. <- req(rfds$active_samples())
     nsamples <- nrow(asamples.)
-    value <- if (req(input$pcs) > nsamples) nsamples else NULL
-    updateNumericInput(session, "pcs", value = value, max = nsamples)
+    req(nsamples > 2)
+    npcs <- input$pcs
+    value <- if (req(input$pcs) > nsamples) nsamples else input$pcs
+    
+    shiny::updateNumericInput(session, "pcs", value = value, max = nsamples)
   })
   
-  observeEvent(assaySelect$assay_info(), {
-    ainfo <- req(assaySelect$assay_info())
-    features. <- assaySelect$features()
+  observeEvent(assay$assay_info(), {
+    ainfo <- req(assay$assay_info())
+    features. <- assay$features()
     ftypes <- unique(features.[["meta"]])
-    default_pcoding <- "protein_coding" %in% ftypes
-    if (default_pcoding) {
+    if (ainfo$assay_type == "rnaseq" && "protein_coding" %in% ftypes) {
       selected <- "protein_coding"
     } else {
       selected <- ftypes
     }
-    updatePickerInput(session, "features", choices = ftypes, selected = selected)
+    shinyWidgets::updatePickerInput(session, "features", choices = ftypes,
+                                    selected = selected)
   })
   
   feature_universe <- reactive({
-    filter(assaySelect$features(), .data$meta %in% input$features)
+    filter(assay$features(), .data$meta %in% input$features)
   })
   
   vals <- list(
@@ -74,7 +76,7 @@ initialized.FpcaRunOptions <- function(x, ...) {
   ntop <- x$ntop()
   priorcount <- x$priorcount()
   
-  !unselected(npcs) && is.integer(npcs) &&
-    !unselected(ntop) && is.integer(ntop) &&
+  test_int(npcs, lower = 2) &&
+    test_int(ntop, lower = 2) &&
     nrow(x$feature_universe()) >= npcs
 }

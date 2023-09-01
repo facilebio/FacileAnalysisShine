@@ -1,23 +1,16 @@
 Package: FacileAnalysisShine
 Type: Package
-Title: I(mmersive|nteractive) components to a FacileAnalysis
-Version: 0.0.1
+Title: Interactive components to a FacileAnalysis
+Version: 0.0.3
 Authors@R: c(
     person(
       "Steve", "Lianoglou",
       email = "slianoglou@gmail.com", 
-      role = c("aut", "cre"), comment = c(ORCID = "0000-0002-0924-1754")),
-    person(
-      "Jonathan", "Carroll", 
-      email = "rpkg@jcarroll.com.au", 
-      role = c("ctb"), comment = c(ORCID = "0000-0002-1404-5264")),
-    person(
-      "Denali Therapeutics",
-      role = c("cph", "fnd"), comment = "2018 - 2021"))
+      role = c("aut", "cre"), comment = c(ORCID = "0000-0002-0924-1754")))
 Description: Provides interactive components to create an immersive
     FacileAnalysis experience.
-URL: https://github.com/facilebio/iFacileAnalysis
-BugReports: https://github.com/facilebio/iFacileAnalysis/issues
+URL: https://github.com/facilebio/FacileAnalysisShine
+BugReports: https://github.com/facilebio/FacileAnalysisShine/issues
 Depends:
     R (>= 4.2.0)
 Imports:
@@ -72,12 +65,6 @@ Remotes:
     facilebio/FacileViz,
     lianos/sparrow,
     lianos/sparrow.shiny
-biocViews:
-    DifferentialExpression,
-    GeneExpression,
-    GeneSetEnrichment,
-    DimensionReduction,
-    Visualization
 License: Apache License (>= 2.0)
 Encoding: UTF-8
 LazyData: true

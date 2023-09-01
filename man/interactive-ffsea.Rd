@@ -2,7 +2,7 @@
 % Please edit documentation in R/ffsea-shiny-modules.R
 \name{ffseaGadget}
 \alias{ffseaGadget}
-\alias{ffseaRun}
+\alias{ffseaRunServer}
 \title{Full interactive executation of GSEA, soup to nuts.}
 \usage{
 ffseaGadget(
@@ -16,7 +16,7 @@ ffseaGadget(
   debug = FALSE
 )
 
-ffseaRun(input, output, session, rfds, aresult, gdb, ..., debug = FALSE)
+ffseaRunServer(id, rfds, aresult, gdb, ..., debug = FALSE)
 }
 \arguments{
 \item{x}{A FacileAnalysisResult that has an implemented \verb{ffsea.*} method}

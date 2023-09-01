@@ -1,8 +1,9 @@
 devtools::load_all(".")
-efds <- FacileData::FacileDataSet("~/workspace/facilebio/data/BulkKPMPDataSet")
+
+datadir <- "~/workspace/facilebio/data"
+# afds <- FacileData::an_fds()
 user <- Sys.getenv("USER")
 options(facile.log.level.fshine = "trace")
-
 
 # debug(FacileData:::biocbox.facile_frame)
 # debug(FacileData:::.fetch_assay_data)
@@ -10,17 +11,25 @@ options(facile.log.level.fshine = "trace")
 # All in one module ============================================================
 shiny::shinyApp(
   ui = shiny::fluidPage(
-    # reactiveFacileDataStoreUI("rfds"),
-    FacileShine::filteredReactiveFacileDataStoreUI("rfds"),
-    shiny::tags$h2("fdgeAnalysis"),
-    fdgeAnalysisUI("analysis"),
-    NULL),
-
+    shinyjs::useShinyjs(),
+    shiny::fluidRow(
+      shiny::column(
+        width = 3,
+        shiny::wellPanel(
+          FacileShine::facileDataSetSelectInput("fdslist", debug = debug),
+          FacileShine::facileSampleFiltersSelectInput("rfds", debug = debug))),
+      shiny::column(
+        width = 9,
+        shiny::tags$h2("fdgeAnalysis"),
+        fdgeAnalysisUI("analysis")))),
   server = function(input, output) {
-    rfds <- callModule(FacileShine::filteredReactiveFacileDataStore, "rfds",
-                       path = reactive(efds$parent.dir),
-                       user = "lianoglou")
-    analysis <- callModule(fdgeAnalysis, "analysis", rfds)
+    fdslist <- FacileShine::facileDataSetSelectServer(
+      "fdslist", reactive(datadir))
+    # rfds <- FacileShine::facileDataStoreServer("rfds", reactive(afds))
+    rfds <- FacileShine::facileDataStoreServer(
+      "rfds", fdslist$path,
+      user = user)
+    analysis <- fdgeAnalysisServer("analysis", rfds)
   }
 )
 

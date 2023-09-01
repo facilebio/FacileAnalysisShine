@@ -10,6 +10,7 @@ fdgeseaGadget(
   title = "DGE and GSEA",
   height = 800,
   width = 1000,
+  viewer = "browser",
   ...
 )
 }

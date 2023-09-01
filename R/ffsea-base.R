@@ -22,6 +22,6 @@ initialized.FacileFseaAnalysisResult <- function(x, ...) {
 shine.FacileFseaAnalysisResult <- function(x, user = Sys.getenv("USER"),
                                            title = "FSEA Results",
                                            viewer = "browser", ...) {
-  frunGadget(ffseaView, ffseaViewUI, x, aresult = x, title = title,
-             viewer = viewer, ...)
+  frunGadgetServer(ffseaViewServer, ffseaViewUI, x, aresult = x, title = title,
+                   viewer = viewer, ...)
 }
