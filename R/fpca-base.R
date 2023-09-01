@@ -13,6 +13,6 @@ initialized.FacilePcaAnalysisResult <- function(x, ...) {
 shine.FacilePcaAnalysisResult <- function(x, dims = 2, user = Sys.getenv("USER"),
                                           title = "PCA Results",
                                           viewer = "browser", ...) {
-  frunGadget(fpcaView, fpcaViewUI, x, pcares = x, title = title,
-             viewer = viewer, ...)
+  frunGadgetServer(fpcaViewServer, fpcaViewUI, x, pcares = x, title = title,
+                   viewer = viewer, ...)
 }

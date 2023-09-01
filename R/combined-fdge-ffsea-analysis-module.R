@@ -9,10 +9,13 @@
 #' fdgeseaGadget(xs, gdb)
 #' }
 fdgeseaGadget <- function(x, gdb = NULL, title = "DGE and GSEA",
-                          height = 800, width = 1000, ...) {
+                          height = 800, width = 1000, viewer = "browser", ...) {
   assert_multi_class(x, c("FacileDataStore", "facile_frame"))
-  frunGadget(fDgeSeaAnalysis, fDgeSeaAnalysisUI, x, gdb = gdb, title = title,
-             height = height, width = width, ...)
+  assert_class(gdb, "GeneSetDb")
+  frunGadgetServer(fDgeSeaAnalysisServer, fDgeSeaAnalysisUI, x,
+                   gdb = reactive(gdb),
+                   title = title, height = height, width = widh,
+                   viewer = viewer, ...)
 }
 
 #' An analysis module that combines differential expression with GESA.
@@ -38,78 +41,54 @@ fdgeseaGadget <- function(x, gdb = NULL, title = "DGE and GSEA",
 #' it to the `dge_vew` volcano and statistics tables ... or not?
 #'
 #' @export
-fDgeSeaAnalysis <- function(input, output, session, rfds, gdb = NULL, ...,
-                            debug = FALSE) {
-  # fdge bits ..................................................................
-  model <- callModule(flmDefRun, "model", rfds, ..., debug = debug)
-  dge <- callModule(fdgeRun, "dge", rfds, model, ..., debug = debug)
-  dge_view <- callModule(fdgeView, "dge_view", rfds, dge,  ...,
-                        feature_selection = session$ns("volcano"),
-                        sample_selection = session$ns("samples"),
-                        debug = debug)
-
-  # ffsea bits .................................................................
-  fsea <- callModule(ffseaRun, "fsea", rfds, dge, gdb = gdb, ..., debug = debug)
-  fsea_view <- callModule(ffseaView, "fsea_view", rfds, fsea, ...,
-                          debug = FALSE)
-
-  # toggle UI logic ............................................................
-  # Only show the view UI when there is (at least) a DGE result.
-  observe({
-    res. <- req(faro(dge))
-    show <- is(res., "FacileDgeAnalysisResult")
-    toggleElement("viewbox", condition = show)
+fDgeSeaAnalysisServer <- function(id, rfds, ..., gdb = NULL, debug = FALSE) {
+  assert_class(rfds, "ReactiveFacileDataStore")
+  shiny::moduleServer(id, function(input, output, session) {
+    fdge_res <- fdgeAnalysisServer("fdge", rfds, debug = debug, ...)
+    
+    ffsea_res <- ffseaAnalysisServer("ffsea", rfds, fdge_res$main,
+                                     gdb = gdb, debug = debug, ...)
+    shiny::hideTab("atabs", target = "ffseatab")
+    
+    # toogle UI logic ..........................................................
+    # ffsea stuf is visible only when a dge result is live
+    shiny::observe({
+      res. <- req(FacileAnalysis::faro(fdge_res))
+      show <- is(res., "FacileDgeAnalysisResult")
+      if (show) {
+        shiny::showTab("atabs", target = "ffseatab")
+      }
+    })
+    
+    # wrap up ....................................................................
+    vals <- list(
+      main = list(dge = fdge_res, fsea = ffsea_res),
+      .ns = session$ns)
+    
+    class(vals) <- c(
+      # This is a serious whopper of a name -- are you being serious?
+      "ReactiveFacileMultiAnalysisResultContainer"
+    )
+    
+    vals
   })
-
-  # TODO: Enable / Disable FSEA widgets and results when DGE result isn't ready
-  # or a new one is generated.
-
-  # wrap up ....................................................................
-  vals <- list(
-    main = list(dge = dge, fsea = fsea),
-    .ns = session$ns)
-
-  class(vals) <- c(
-    # This is a serious whopper of a name -- are you being serious?
-    "ReactiveFacileMultiAnalysisResultContainer"
-  )
-
-  vals
 }
-
 
 #' @export
 #' @noRd
-#' @importFrom shinydashboard tabBox
-#' @importFrom shinyjs hidden
-#' @importFrom shiny tabPanel
 fDgeSeaAnalysisUI <- function(id, ..., debug = FALSE) {
-  ns <- NS(id)
-
+  ns <- shiny::NS(id)
   box. <- shinydashboard::box
-  tagList(
-    # Linear Model Definitions
-    tags$div(
-      id = ns("modelbox"),
-      box.(title = "Model Definition", width = 12,
-           flmDefRunUI(ns("model"), debug = debug))),
-
-    # DGE and GSEA parameters, side-by-side
-    tags$div(
-      id = ns("configbox"),
-      fluidRow(
-        box.(title = "Differential Expression Parameters", width = 6,
-             fdgeRunUI(ns("dge"), debug = debug)),
-        box.(title = "Set Enrichment Parameters", width = 6,
-             ffseaRunUI(ns("fsea"), debug = debug)))),
-    # Result Container
-    hidden(
-      tags$div(
-        id = ns("viewbox"),
-        tabBox(
-          title = "Analysis Results", width = 12,
-          tabPanel("Differential Expression", fdgeViewUI(ns("dge_view"))),
-          tabPanel("Set Enrichment", ffseaViewUI(ns("fsea_view")))))
-    )
-  )
+  shiny::tagList(
+    shinydashboard::tabBox(
+      id = ns("atabs"), width = 12,
+      shiny::tabPanel(
+        title = "Differential Expression", value = "fdgetab",
+        fdgeAnalysisUI(ns("fdge")),
+        shiny::tags$div(style = "clear: both")),
+      shiny::tabPanel(
+        title = "GSEA", value = "ffseatab",
+        ffseaAnalysisUI(ns("ffsea")),
+        shiny::tags$div(style = "clear: both"))
+    ))
 }

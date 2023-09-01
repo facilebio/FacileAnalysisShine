@@ -8,177 +8,158 @@
 #' ```
 #'
 #' @export
-#' @importFrom FacileShine
-#'   active_samples
-#'   categoricalSampleCovariateSelect
-#'   categoricalSampleCovariateLevels
-#'   initialized
-#'   update_exclude
 #' @importFrom shiny renderText
 #' @importFrom shinyjs toggleElement
-#' @importFrom shinyWidgets sendSweetAlert
 #' @return A `ReactiveFacileLinearModelDefinition` object, the output from
 #'   [flm_def()].
-flmDefRun <- function(input, output, session, rfds, default_covariate = NULL,
-                      ..., debug = FALSE, .reactive = TRUE) {
-  isolate. <- if (.reactive) base::identity else shiny::isolate
+flmDefRunServer <- function(id, rfds, default_covariate = NULL,
+                            ..., debug = FALSE) {
+  assert_class(rfds, "ReactiveFacileDataStore")
+  shiny::moduleServer(id, function(input, output, session) {
 
-  active.samples <- reactive({
-    req(initialized(rfds))
-    # isolate.(active_samples(rfds))
-    ftrace("Updating active samples")
-    active_samples(rfds)
-  })
+    testcov <- FacileShine::categoricalSampleCovariateSelectServer(
+      "testcov", rfds, include1 = FALSE, default_covariate = default_covariate,
+      with_none = FALSE)
+    
+    numer <- FacileShine::categoricalSampleCovariateLevelsSelectServer(
+      "numer", testcov)
+    denom <- FacileShine::categoricalSampleCovariateLevelsSelectServer(
+      "denom", testcov)
+    
+    
+    # the "batch" covariate is what I'm calling the extra/batch-level
+    # covariates. the entry selected in the testcov is removed from the
+    # available elemetns to select from here
+    batchcov <- FacileShine::categoricalSampleCovariateSelectServer(
+      "batchcov", rfds, include1 = FALSE, exclude = testcov$selected,
+      with_none = FALSE)
+    
+    model <- reactive({
+      # samples. <- FacileShine::active_samples(rfds)
+      samples. <- rfds$active_samples()
+      shiny::validate(
+        shiny::need(
+          nrow(samples.) >= 3L, "Need at least 3 samples for a linear model")
+      )
+      
+      testcov. <- name(testcov)
+      req(!unselected(testcov.))
+      
+      numer. <- numer$values()
+      denom. <- denom$values()
+      batch. <- name(batchcov)
+      
+      is.anova <- !unselected(testcov.) &&
+        unselected(numer.) && unselected(denom.)
+      is.ttest <- !unselected(testcov.) &&
+        !unselected(numer.) && !unselected(denom.) &&
+        !setequal(numer., denom.)
+      if (is.ttest) {
+        req(all(c(numer., denom.) %in% testcov$levels()))
+      }
+      
+      is_sane <- is.anova || is.ttest
+      
+      if (is_sane) {
+        out <- flm_def(samples., testcov., numer = numer., denom = denom.,
+                batch = batch.)
+      } else {
+        out <- NULL
+      } 
 
-  testcov <- callModule(categoricalSampleCovariateSelect, "testcov",
-                        rfds, include1 = FALSE,
-                        default_covariate = default_covariate,
-                        ..., .with_none = FALSE,
-                        .reactive = .reactive)
-  # the "batch" covariate is what I'm calling the extra/batch-level
-  # covariates. the entry selected in the testcov is removed from the
-  # available elemetns to select from here
-  batchcov <- callModule(categoricalSampleCovariateSelect, "batchcov",
-                         rfds, include1 = FALSE, ..., .with_none = FALSE,
-                         .exclude = testcov$covariate,
-                         reactive = .reactive, ignoreNULL = FALSE)
-
-  numer <- callModule(categoricalSampleCovariateLevels, "numer",
-                      rfds, testcov, .reactive = .reactive, ignoreNULL = FALSE)
-
-  denom <- callModule(categoricalSampleCovariateLevels, "denom",
-                      rfds, testcov, .reactive = .reactive, ignoreNULL = FALSE)
-
-  # Make the levels available in the numer and denom covariates
-  # mutually exclusive
-  # Note: I can't get categoricalSampleCovariateLevels to work
-  # smoothly like this when `ignoreNULL = FALSE` is set so that
-  # when one selectize drains, its last level is made availalbe
-  # to the other select.
-  # TODO: Use FacileShine::categoricalSampleCovariateLevels
-  #       instead of individual numer and denom selects so that
-  #       the empty select releases its last level to the
-  #       "select pool"
-  # observe({
-  #   update_exclude(denom, numer$values)
-  #   update_exclude(numer, denom$values)
-  # })
-
-  model <- reactive({
-    req(initialized(rfds))
-    samples. <- active.samples()
-    testcov. <- name(testcov)
-    req(!unselected(testcov.))
-
-    numer. <- numer$values()
-    denom. <- denom$values()
-    batch. <- name(batchcov)
-
-    # Ensure that either
-    #   i. neither numer or denom is filled so that we run an ANOVA;
-    #  ii. both are filled for a propper t-test specification
-    partial <- xor(unselected(numer.), unselected(denom.))
-    all.dups <- !unselected(numer.) && setequal(numer., denom.)
-
-    if (partial || all.dups) {
-      out <- NULL
-    } else {
-      out <- flm_def(samples., testcov., numer = numer., denom = denom.,
-                     batch = batch.)
-    }
-    out
-  })
-
-  status. <- reactive({
-    req(initialized(rfds))
-    model. <- model()
-    status(model., with_warnings = TRUE)
-  })
-
-  observeEvent(status.(), {
-    s <- status.()
-    iserr <- is(s, "FacileAnalysisStatusError")
-    toggleElement("messagebox", condition = !iserr)
-    if (iserr) {
-      sendSweetAlert(session, "Error building model",text = s, type = "error")
-    }
-  })
-
-  output$message <- renderText({
-    model. <- model()
-    if (is.null(model.)) {
-      msg <- "Undefined model"
-    } else {
-      msg <- status.()
-    }
-    msg
-  })
-
-  if (debug) {
-    output$debug <- shiny::renderText({
-      model. <- req(model())
-      format(model.)
+      out
     })
-  }
-
-  vals <- list(
-    faro = model,
-    testcov = testcov,
-    numer = numer,
-    denom = denom,
-    batchcov = batchcov,
-    .ns = session$ns)
-
-  class(vals) <- c("ReactiveFacileLinearModelDefinition",
-                   "ReactiveFacileAnalysisResult",
-                   "FacileLinearModelDefinition")
-  vals
+    
+    status. <- reactive({
+      req(initialized(rfds))
+      model. <- model()
+      status(model., with_warnings = TRUE)
+    })
+    
+    observeEvent(status.(), {
+      s <- status.()
+      iserr <- is(s, "FacileAnalysisStatusError")
+      shinyjs::toggleElement("messagebox", condition = !iserr)
+      if (iserr) {
+        shinyWidgets::sendSweetAlert(session, "Error building model",
+                                     text = s, type = "error")
+      }
+    })
+    
+    output$message <- renderText({
+      model. <- model()
+      if (is.null(model.)) {
+        msg <- "Undefined model"
+      } else {
+        msg <- status.()
+      }
+      msg
+    })
+    
+    if (debug) {
+      output$debug <- shiny::renderText({
+        model. <- req(model())
+        format(model.)
+      })
+    }
+    
+    vals <- list(
+      faro = model,
+      testcov = testcov,
+      numer = numer,
+      denom = denom,
+      batchcov = batchcov,
+      .ns = session$ns)
+    
+    class(vals) <- c("ReactiveFacileLinearModelDefinition",
+                     "ReactiveFacileAnalysisResult",
+                     "FacileLinearModelDefinition")
+    vals    
+  })
 }
 
 #' @noRd
 #' @export
-#' @importFrom FacileShine
-#'   categoricalSampleCovariateSelectUI
-#'   categoricalSampleCovariateLevelsUI
-#' @importFrom shiny textOutput wellPanel
-#' @importFrom shinyjs hidden
 flmDefRunUI <- function(id, ..., debug = FALSE) {
-  ns <- NS(id)
+  ns <- shiny::NS(id)
 
-  out <- tagList(
-    fluidRow(
-      column(
-        2,
-        categoricalSampleCovariateSelectUI(
+  out <- shiny::tagList(
+    shiny::fluidRow(
+      shiny::column(
+        width = 2,
+        FacileShine::categoricalSampleCovariateSelectInput(
           ns("testcov"),
           label = "Group to test",
           multiple = FALSE)),
-      column(
-        4,
-        categoricalSampleCovariateLevelsUI(
+      shiny::column(
+        width = 4,
+        FacileShine::categoricalSampleCovariateLevelsSelectInput(
           ns("numer"),
           label = "Numerator",
           multiple = TRUE)),
-      column(
-        4,
-        categoricalSampleCovariateLevelsUI(
+      shiny::column(
+        width = 4,
+        FacileShine::categoricalSampleCovariateLevelsSelectInput(
           ns("denom"),
           label = "Denominator",
           multiple = TRUE)),
-      column(
-        2,
-        categoricalSampleCovariateSelectUI(
+      shiny::column(
+        width = 2,
+        FacileShine::categoricalSampleCovariateSelectInput(
           ns("batchcov"),
           label = "Control for",
           multiple = TRUE))),
-    hidden(wellPanel(id = ns("messagebox"), textOutput(ns("message"))))
+    shinyjs::hidden(
+      shiny::wellPanel(
+        id = ns("messagebox"), 
+        shiny::textOutput(ns("message"))))
   )
 
   if (debug) {
-    out <- tagList(
+    out <- shiny::tagList(
       out,
       shiny::verbatimTextOutput(ns("debug"), placeholder = TRUE))
   }
-
+  
   out
 }
