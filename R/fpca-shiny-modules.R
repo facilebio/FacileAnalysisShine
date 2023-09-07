@@ -6,8 +6,8 @@
 #' @export
 #' @examples
 #' if (interactive()) {
-#' efds <- FacileData::exampleFacileDataSet()
 #' # run tumor vs normal comparisons vs each, then run compare9) on the results
+#' efds <- FacileData::exampleFacileDataSet()
 #' pca.crc <- efds |>
 #'   FacileData::filter_samples(indication == "CRC") |>
 #'   fpcaGadget()
@@ -36,7 +36,7 @@ fpcaAnalysisServer <- function(id, rfds, ..., debug = FALSE) {
       res. <- req(faro(pca))
       show <- is(res., "FacilePcaAnalysisResult")
       ftrace("Toggling PCA viewbox to: ", if (show) "show" else "hide")
-      # shinyjs::toggleElement("viewbox", condition = show)
+      shinyjs::toggleElement("viewbox", condition = show)
     })
     
     vals <- list(
@@ -58,11 +58,11 @@ fpcaAnalysisUI <- function(id, ..., debug = FALSE) {
     shiny::tags$div(
       id = ns("runbox"), 
       fpcaRunUI(ns("pca"), debug = debug)),
-    # shinyjs::hidden(
+    shinyjs::hidden(
       shiny::tags$div(
-        ns("viewbox"), 
+        id = ns("viewbox"), 
         fpcaViewUI(ns("view"), debug = debug))
-    # )
+    )
   )
 }
 
