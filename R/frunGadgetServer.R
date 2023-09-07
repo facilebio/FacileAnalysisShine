@@ -12,23 +12,22 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
   assert_function(analysisUI)
   
   viewer <- gadget_viewer(viewer, title, width, height)
-  restrict_samples <- NULL
   
+  fds. <- fds(x)
+  restrict_samples <- NULL
+
   if (is(x, "facile_frame")) {
-    fds. <- fds(x)
     samples. <- x
     sample.filter <- FALSE
     restrict_samples <- samples.
   } else if (is(x, "FacileDataStore")) {
-    sample.filter <- TRUE
-    fds. <- x
     samples. <- collect(samples(x), n = Inf)
+    sample.filter <- TRUE
   } else if (is(x, "FacileAnalysisResult")) {
     # ugh, this isn't going to work -- I'm writing this in to fire up a
     # ffseaGadget, whose needs to be a FacileAnalysisResult.
-    sample.filter <- FALSE
-    fds. <- fds(x)
     samples. <- collect(samples(x), n = Inf)
+    sample.filter <- FALSE
     restrict_samples <- samples.
   } else {
     stop("What in the world?")
@@ -65,15 +64,15 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
   ui <- miniUI::miniPage(
     shinyjs::useShinyjs(),
     shinyWidgets::useSweetAlert(),
+    waiter::useWaiter(),
     if (interactive()) miniUI::gadgetTitleBar(title) else NULL,
     miniUI::miniContentPanel(ui.content),
     NULL)
   
   server <- function(input, output, session) {
-    # rfds <- FacileShine::ReactiveFacileDataStore(fds., "ds", user = user,
-    #                                              samples = samples.)
     rfds <- FacileShine::facileDataStoreServer(
-      "rfds", fds., samples_subset = reactive(samples.))
+      "rfds", reactive(fds.), samples_subset = reactive(samples.),
+      with_filters = sample.filter)
     
     analysis <- modServer("analysis", rfds, ..., debug = debug)
     
@@ -81,7 +80,6 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
       observe({
         req(initialized(rfds))
         rfds$.state$esample_annotation <- xtra_covariates
-        FacileShine::trigger(rfds, "covariates")
       })
     }
     

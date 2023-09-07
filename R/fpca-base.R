@@ -10,6 +10,12 @@ initialized.FacilePcaAnalysisResult <- function(x, ...) {
 
 #' @noRd
 #' @export
+#' @examples
+#' if (interactive()) {
+#' afds <- FacileData::an_fds()
+#' apca <- fpca(afds)
+#' shine(apca)
+#' }
 shine.FacilePcaAnalysisResult <- function(x, dims = 2, user = Sys.getenv("USER"),
                                           title = "PCA Results",
                                           viewer = "browser", ...) {

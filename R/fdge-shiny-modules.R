@@ -35,14 +35,6 @@
 #'   FacileData::filter_samples(indication == "BLCA") |>
 #'   fdgeGadget(viewer = "pane")
 #' dge.comp <- compare(dge.crc, dge.blca)
-#'
-#' \dontrun{
-#' tfds <- FacileDataSet("~/workspace/data/FacileData/dockerlink/FacileTcgaDataSet")
-#' tsamples <- FacileData::filter_samples(tfds, indication == "BRCA")
-#' tdge <- fdgeGadget(tsamples, viewer = "browser")
-#' }
-#' report(dge.comp)
-#' shine(dge.comp)
 #' }
 fdgeGadget <- function(x, title = "Differential Expression Analysis",
                        height = 800, width = 1000, viewer = "browser", ...) {
@@ -249,7 +241,7 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
                            sample_selection = NULL,
                            debug = FALSE) {
   assert_class(rfds, "ReactiveFacileDataStore")
-  assert_multi_class(dgeres, c("ReactiveFacileDgeAnalysisResult", "FacileDgeAnalysisResult"))
+  assert_multi_class(dgeres, c("ReactiveFacileDgeAnalysisResult", "FacileDgeAnalysisResult", "reactive"))
 
   shiny::moduleServer(id, function(input, output, session) {
     state <- reactiveValues(
@@ -270,6 +262,9 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     
     # The FacileDGEResult object
     dge <- reactive({
+      if (is(dgeres, "reactive")) {
+        dgeres <- req(dgeres())
+      }
       req(initialized(dgeres))
       faro(dgeres)
     })
@@ -546,16 +541,16 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
   ns <- shiny::NS(id)
   box <- shinydashboard::box
 
-  if (rmd) {
-    withSpinner <- identity 
-  } else {
-    withSpinner <- function(x) {
-      shinyWidgets::addSpinner(
-        x,
-        spin = getOption("FacileShine.spinner_type"),
-        color = getOption("FacileShine.spinner_color"))
-    }
-  }
+  # if (rmd) {
+  #   withSpinner <- identity 
+  # } else {
+  #   withSpinner <- function(x) {
+  #     shinyWidgets::addSpinner(
+  #       x,
+  #       spin = getOption("FacileShine.spinner_type"),
+  #       color = getOption("FacileShine.spinner_color"))
+  #   }
+  # }
 
   volcano.box <- shiny::tags$div(
     style = "margin-top: 10px",
@@ -570,7 +565,8 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
       shiny::tags$span("Volcano Plot", style = "font-weight: bold"),
       shiny::tags$div(
         id = ns("volcanoplotdiv"),
-        withSpinner(plotly::plotlyOutput(ns("volcano"))))))
+        # withSpinner(plotly::plotlyOutput(ns("volcano"))))))
+        waiter::withWaiter(plotly::plotlyOutput(ns("volcano"))))))
 
   boxplot.box <- box(
     width = 12,
@@ -583,7 +579,8 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
           onLabel = "Yes", offLabel = "No", value = TRUE,
           inline = TRUE),
         shiny::tags$span("Batch Correction", style = "font-weight: bold"))),
-    withSpinner(plotly::plotlyOutput(ns("boxplot"))))
+    # withSpinner(plotly::plotlyOutput(ns("boxplot"))))
+    waiter::withWaiter(plotly::plotlyOutput(ns("boxplot"))))
 
   shiny::fluidRow(
     # Plots Column
@@ -607,5 +604,7 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
           style = "padding: 0 0 1em 0; float: right;",
           shiny::downloadButton(ns("statsdl"), "Download")),
         shiny::tags$div(style = "clear: right;"),
-        withSpinner(DT::DTOutput(ns("stats"))))))
+        # withSpinner(DT::DTOutput(ns("stats"))))))
+        waiter::withWaiter(DT::DTOutput(ns("stats"))))))
+  
 }
