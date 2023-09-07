@@ -29,7 +29,6 @@ Imports:
     sparrow.shiny,
     plotly (>= 4.9.0),
     shiny (>= 1.3.1),
-    shinycssloaders,
     shinydashboard,
     shinyjs,
     shinyWidgets,

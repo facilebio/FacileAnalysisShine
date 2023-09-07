@@ -237,6 +237,7 @@ fdge.ReactiveFacileLinearModelDefinition <- function(x, assay_name = NULL,
 #' @export
 #' @param dgeres The result from calling [fdge()], or [fdgeRun()].
 fdgeViewServer <- function(id, rfds, dgeres, ...,
+                           feature_subset = reactive(NULL),
                            feature_selection = NULL,
                            sample_selection = NULL,
                            debug = FALSE) {
@@ -307,12 +308,19 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     #    brushing is active, then (2) == (1)
     dge.stats.all <- reactive({
       dge. <- req(dge())
+      fsubset <- feature_subset()
+      
       ranked <- result(ranks(dge.))
       if (is_ttest(dge.)) {
         out <- select(ranked, symbol, feature_id, logFC, FDR = padj, pval)
       } else {
         out <- select(ranked, symbol, feature_id, F, FDR = padj, pval)
       }
+      
+      if (is.character(fsubset) && length(fsubset) > 1) {
+        out <- filter(out, .data$feature_id %in% fsubset)
+      }
+
       out
     })
   
