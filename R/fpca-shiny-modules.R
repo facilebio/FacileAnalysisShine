@@ -366,7 +366,7 @@ fpcaViewUI <- function(id, ..., debug = FALSE) {
                 ns("aes"),
                 color = TRUE, shape = TRUE, facet = TRUE, hover = TRUE,
                 group = FALSE)))),
-        plotly::plotlyOutput(ns("pcaplot"))),
+        waiter::withWaiter(plotly::plotlyOutput(ns("pcaplot")))),
       shiny::column(
         width = 5,
         shiny::tags$h4("Feature Loadings"),
@@ -386,7 +386,7 @@ fpcaViewUI <- function(id, ..., debug = FALSE) {
           # )),
         ,
         # shinyWidgets::addSpinner(
-        DT::DTOutput(ns("loadings"), height = "650px"),
+        waiter::withWaiter(DT::DTOutput(ns("loadings"), height = "650px")),
         spin = getOption("FacileShine.spinner_type"),
         color = getOption("FacileShine.spinner_color")
         # )

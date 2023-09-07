@@ -11,15 +11,15 @@
 #' @param x A FacileAnalysisResult that has an implemented `ffsea.*` method
 #' @param gdb A `GeneSetDb` to use for the FSEA.
 #' @examples
-#' gdb <- sparrow::exampleGeneSetDb()
-#' dge.crc <- FacileData::exampleFacileDataSet() |>
-#'   FacileData::filter_samples(indication == "CRC") |>
-#'   flm_def(covariate = "sample_type", numer = "tumor", denom = "normal",
-#'           batch = "sex") |>
-#'   fdge(method = "voom")
 #' if (interactive()) {
-#'   fres <- ffseaGadget(dge.crc, gdb)
-#' }
+#' gdb <- sparrow::getMSigGeneSetDb("h", species = "human", id.type = "ensembl")
+#' dge.ttest <- FacileData::an_fds() |> 
+#'   flm_def("cell_abbrev", numer = "CNT", denom = "IC") |> 
+#'   fdge(method = "voom")
+#' gsea <- ffsea(dge.ttest, gdb, methods = "cameraPR")
+#' shine(gsea)
+#' 
+#' gsea2 <- ffseaGadget(dge.ttest, gdb)
 ffseaGadget <- function(x, gdb, title = "Feature Set Enrichment Analysis",
                         height = 800, width = 1000, viewer = "browser", ...,
                         debug = FALSE) {
