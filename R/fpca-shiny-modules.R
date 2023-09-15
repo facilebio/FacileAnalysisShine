@@ -300,7 +300,8 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
       pc <- paste0("PC", input$loadingsPC)
       req(feature.ranks()) |>
         filter(dimension == pc) |>
-        select(symbol, feature_id, score)
+        select(symbol, score) |> 
+        mutate(absScore = abs(score))
     })
     
     observe({
