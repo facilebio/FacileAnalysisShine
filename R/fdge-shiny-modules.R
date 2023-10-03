@@ -148,18 +148,26 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
       req(runnable())
       assay_name. <- assay$selected()
       flm <- unreact(faro(model))
-      withProgress({
-        fdge(flm, assay_name = assay_name.,
-             method = runopts$dge_method(),
-             with_sample_weights = runopts$sample_weights(),
-             treat_lfc = runopts$treat_lfc(),
-             filter_universe = runopts$feature_filter$universe()
-             #, filter = runopts$feature_filter$method(),
-             # filter_min_count = runopts$feature_filter$min_count(),
-             # filter_min_total_count = runopts$feature_filter$min_total_count(),
-             # filter_min_expr = runopts$feature_filter$min_expr()
-        )
+      result <- withProgress({
+        tryCatch(
+          fdge(flm, assay_name = assay_name.,
+               method = runopts$dge_method(),
+               with_sample_weights = runopts$sample_weights(),
+               treat_lfc = runopts$treat_lfc(),
+               filter_universe = runopts$feature_filter$universe()
+               #, filter = runopts$feature_filter$method(),
+               # filter_min_count = runopts$feature_filter$min_count(),
+               # filter_min_total_count = runopts$feature_filter$min_total_count(),
+               # filter_min_expr = runopts$feature_filter$min_expr()
+        ), error = function(e) geterrmessage())
       }, message = "Performing differential expression")
+      if (is.character(result)) {
+        shinyWidgets::sendSweetAlert(
+          session, 
+          "Error in differential analysis",
+          text = result, type = "error")
+      }
+      result
     })
     
     if (debug) {
