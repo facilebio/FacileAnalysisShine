@@ -26,3 +26,13 @@ reqpkg <- function(pkg, quietly = TRUE, ...) {
     }
   }
 }
+
+#' Create an empty plot
+#' https://stackoverflow.com/a/56788210
+#' @noRd
+#' @export
+empty_plot <- function(title = NULL) {
+  plotly::plotly_empty(type = "scatter", mode = "markers") |> 
+    plotly::config(displayModeBar = FALSE) |> 
+    plotly::layout(title = list(text = title, yref = "paper", y = 0.5))
+} 

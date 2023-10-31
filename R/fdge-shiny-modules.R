@@ -148,7 +148,10 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
       req(runnable())
       assay_name. <- assay$selected()
       flm <- unreact(faro(model))
-      result <- withProgress({
+      
+      shinyjs::disable("run")
+      
+      result <- shiny::withProgress({
         tryCatch(
           fdge(flm, assay_name = assay_name.,
                method = runopts$dge_method(),
@@ -167,6 +170,9 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
           "Error in differential analysis",
           text = result, type = "error")
       }
+      
+      shinyjs::enable("run")
+
       result
     })
     
@@ -432,8 +438,9 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     })
   
     output$boxplot <- plotly::renderPlotly({
-      plt <- req(featureviz())
-      plot(plt)
+      # plt <- tryCatch(featureviz(), error = function(e) NULL)
+      # if (is.null(plt)) empty_plot() else plot(plt)
+      plot(req(featureviz()))
     })
   
     output$boxplotdl <- shiny::downloadHandler(

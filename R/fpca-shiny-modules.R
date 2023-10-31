@@ -106,13 +106,25 @@ fpcaRunServer <- function(id, rfds, ..., debug = FALSE) {
       main. <- name(batch$main)
 
       ftrace("running fpca")
+      shinyjs::disable("run")
+      
       out <- shiny::withProgress({
-        these <- unreact(samples.)
-        fpca(these, dims = pcs, ntop = ntop, assay_name = assay_name,
-             features = features., filter = "variance",
-             batch = batch., main = main., prior.count = pcount,
-             custom_key = user(rfds))
+        tryCatch({
+          these <- unreact(samples.)
+          fpca(these, dims = pcs, ntop = ntop, assay_name = assay_name,
+               features = features., filter = "variance",
+               batch = batch., main = main., prior.count = pcount,
+               custom_key = user(rfds))
+        }, error = function(e) geterrmessage())
       }, message = "Performing PCA")
+      if (is.character(result)) {
+        shinyWidgets::sendSweetAlert(
+          session, 
+          "Error running PCA",
+          text = result, type = "error")
+      }
+      
+      shinyjs::enable("run")
       ftrace("PCA ran on ", nrow(these), " samples")
       ftrace("PCA Output on ", nrow(tidy(out)), " samples")
       out
