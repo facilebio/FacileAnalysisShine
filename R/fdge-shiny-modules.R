@@ -531,10 +531,12 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
       dat <- req(dge.stats())
       num.cols <- colnames(dat)[sapply(dat, is.numeric)]
   
-      dtopts <- list(deferRender = TRUE, scrollY = 300,
-                     # scroller = TRUE,
-                     pageLength = 15,
-                     lengthMenu = c(15, 30, 50))
+      dtopts <- list(
+        deferRender = TRUE, 
+        scrollY = 600,
+        # scroller = TRUE,
+        pageLength = 15,
+        lengthMenu = c(15, 30, 50))
   
       dtable <- dat |>
         DT::datatable(
@@ -588,7 +590,6 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
       shiny::tags$span("Volcano Plot", style = "font-weight: bold"),
       shiny::tags$div(
         id = ns("volcanoplotdiv"),
-        # withSpinner(plotly::plotlyOutput(ns("volcano"))))))
         shinycssloaders::withSpinner(plotly::plotlyOutput(ns("volcano"))))))
 
   boxplot.box <- box(
@@ -602,7 +603,6 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
           onLabel = "Yes", offLabel = "No", value = TRUE,
           inline = TRUE),
         shiny::tags$span("Batch Correction", style = "font-weight: bold"))),
-    # withSpinner(plotly::plotlyOutput(ns("boxplot"))))
     shinycssloaders::withSpinner(plotly::plotlyOutput(ns("boxplot"))))
 
   shiny::fluidRow(
@@ -610,6 +610,9 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
     shiny::column(
       width = 5,
       id = ns("vizcolumn"),
+      shiny::tags$div(
+        style = "margin-top: 150px",
+        shiny::tags$p(shiny::HTML("&nbsp;"))),
       boxplot.box,
       shiny::downloadButton(ns("boxplotdl"), "Download Data"),
       volcano.box),
@@ -627,7 +630,6 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
           style = "padding: 0 0 1em 0; float: right;",
           shiny::downloadButton(ns("statsdl"), "Download")),
         shiny::tags$div(style = "clear: right;"),
-        # withSpinner(DT::DTOutput(ns("stats"))))))
         shinycssloaders::withSpinner(DT::DTOutput(ns("stats"))))))
   
 }

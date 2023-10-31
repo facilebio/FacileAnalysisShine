@@ -336,10 +336,11 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
     )
     
     output$loadings <- DT::renderDT({
-      dtopts <- list(deferRender = TRUE, scrollY = 450,
-                     # scroller = TRUE,
-                     pageLength = 15,
-                     lengthMenu = c(15, 30, 50))
+      dtopts <- list(
+        deferRender = TRUE,
+        scrollY = 600,
+        pageLength = 15,
+        lengthMenu = c(15, 30, 50))
       
       pc.dat <- pc.loadings()
       num.cols <- colnames(pc.dat)[sapply(pc.dat, is.numeric)]
