@@ -1,7 +1,7 @@
 Package: FacileAnalysisShine
 Type: Package
 Title: Interactive components to a FacileAnalysis
-Version: 0.0.6
+Version: 0.0.7
 Authors@R: c(
     person(
       "Steve", "Lianoglou",
@@ -31,11 +31,11 @@ Imports:
     shiny (>= 1.3.1),
     shinydashboard,
     shinyjs,
+    shinycssloaders,
     shinyWidgets,
     stringr,
     tibble,
-    tidyr,
-    waiter
+    tidyr
 Suggests:
     airway,
     BiasedUrn,
@@ -63,6 +63,7 @@ Remotes:
     facilebio/FacileData,
     facilebio/FacileShine,
     facilebio/FacileViz,
+    daattali/shinycssloaders,
     lianos/sparrow,
     lianos/sparrow.shiny
 License: Apache License (>= 2.0)

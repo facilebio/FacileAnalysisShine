@@ -20,6 +20,7 @@
 #' shine(gsea)
 #' 
 #' gsea2 <- ffseaGadget(dge.ttest, gdb)
+#' }
 ffseaGadget <- function(x, gdb, title = "Feature Set Enrichment Analysis",
                         height = 800, width = 1000, viewer = "browser", ...,
                         debug = FALSE) {

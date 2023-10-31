@@ -63,13 +63,5 @@ dge.blca <- efds |>
   FacileData::filter_samples(indication == "BLCA") |>
   fdgeGadget(viewer = "pane")
 dge.comp <- compare(dge.crc, dge.blca)
-
-\dontrun{
-tfds <- FacileDataSet("~/workspace/data/FacileData/dockerlink/FacileTcgaDataSet")
-tsamples <- FacileData::filter_samples(tfds, indication == "BRCA")
-tdge <- fdgeGadget(tsamples, viewer = "browser")
-}
-report(dge.comp)
-shine(dge.comp)
 }
 }

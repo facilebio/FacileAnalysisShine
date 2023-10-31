@@ -582,7 +582,7 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
       shiny::tags$div(
         id = ns("volcanoplotdiv"),
         # withSpinner(plotly::plotlyOutput(ns("volcano"))))))
-        waiter::withWaiter(plotly::plotlyOutput(ns("volcano"))))))
+        shinycssloaders::withSpinner(plotly::plotlyOutput(ns("volcano"))))))
 
   boxplot.box <- box(
     width = 12,
@@ -596,7 +596,7 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
           inline = TRUE),
         shiny::tags$span("Batch Correction", style = "font-weight: bold"))),
     # withSpinner(plotly::plotlyOutput(ns("boxplot"))))
-    waiter::withWaiter(plotly::plotlyOutput(ns("boxplot"))))
+    shinycssloaders::withSpinner(plotly::plotlyOutput(ns("boxplot"))))
 
   shiny::fluidRow(
     # Plots Column
@@ -621,6 +621,6 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
           shiny::downloadButton(ns("statsdl"), "Download")),
         shiny::tags$div(style = "clear: right;"),
         # withSpinner(DT::DTOutput(ns("stats"))))))
-        waiter::withWaiter(DT::DTOutput(ns("stats"))))))
+        shinycssloaders::withSpinner(DT::DTOutput(ns("stats"))))))
   
 }

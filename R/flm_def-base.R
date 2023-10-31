@@ -4,8 +4,8 @@ initialized.FacileLinearModelDefinition <- function(x, ...) {
   !is(x, "FacileFailedModelDefinition") && !is(x, "IncompleteModelDefintion")
 }
 
+#' @noRd
 #' @export
-#' @rdname flm_def
 #' @importFrom FacileShine active_samples
 #' @importFrom FacileViz unselected
 flm_def.ReactiveFacileDataStore <- function(x, covariate, numer = NULL,

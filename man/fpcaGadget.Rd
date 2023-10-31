@@ -12,8 +12,8 @@ subset of samples, pass in a facile_frame sample descriptor
 }
 \examples{
 if (interactive()) {
-efds <- FacileData::exampleFacileDataSet()
 # run tumor vs normal comparisons vs each, then run compare9) on the results
+efds <- FacileData::exampleFacileDataSet()
 pca.crc <- efds |>
   FacileData::filter_samples(indication == "CRC") |>
   fpcaGadget()

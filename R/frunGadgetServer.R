@@ -64,7 +64,6 @@ frunGadgetServer <- function(modServer, analysisUI, x, user = Sys.getenv("USER")
   ui <- miniUI::miniPage(
     shinyjs::useShinyjs(),
     shinyWidgets::useSweetAlert(),
-    waiter::useWaiter(),
     if (interactive()) miniUI::gadgetTitleBar(title) else NULL,
     miniUI::miniContentPanel(ui.content),
     NULL)
