@@ -293,8 +293,10 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
         acolor <- added
       }
       
-      viz(pca., axes, color_aes = acolor, shape_aes = ashape, hover = ahover,
-          facet_aes = afacet, width = NULL, height = 550)
+      viz(pca., dims = dims, type = "scatter",
+          color_aes = acolor, shape_aes = ashape,
+          hover = ahover, facet_aes = afacet,
+          width = NULL, height = 550)
     })
     
     output$pcaplot <- plotly::renderPlotly({
