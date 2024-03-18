@@ -293,7 +293,7 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
         acolor <- added
       }
       
-      viz(pca., dims = dims, type = "scatter",
+      viz(pca., dims = axes, type = "scatter",
           color_aes = acolor, shape_aes = ashape,
           hover = ahover, facet_aes = afacet,
           width = NULL, height = 550)
