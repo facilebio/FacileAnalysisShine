@@ -12,13 +12,13 @@ Description: Provides interactive components to create an immersive
 URL: https://github.com/facilebio/FacileAnalysisShine
 BugReports: https://github.com/facilebio/FacileAnalysisShine/issues
 Depends:
-    R (>= 4.2.0)
+    R (>= 4.2.0),
+    FacileAnalysis
 Imports:
     checkmate,
     crosstalk,
     dplyr,
     DT,
-    FacileAnalysis,
     FacileData (>= 0.98.5),
     FacileShine (>= 0.98.0),
     FacileViz (>= 0.98.0),
