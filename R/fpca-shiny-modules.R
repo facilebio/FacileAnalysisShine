@@ -171,14 +171,16 @@ fpcaRunUI <- function(id, width_opts = "200px", ..., debug = FALSE) {
 
 #' @noRd
 #' @export
-fpcaViewServer <- function(id, rfds, pcares, ...,
-                     feature_selection = session$ns("features"),
-                     sample_selection = session$ns("samples"),
-                     debug = FALSE) {
+fpcaViewServer <- function(
+    id, rfds, pcares, ...,
+    feature_selection = session$ns("features"),
+    sample_selection = session$ns("samples"),
+    debug = FALSE) {
   assert_class(rfds, "ReactiveFacileDataStore")
   assert_multi_class(
     pcares, 
-    c("ReactiveFacilePcaAnalysisResult", "FacilePcaAnalysisResult"))
+    c("ReactiveFacilePcaAnalysisResult", "FacilePcaAnalysisResult", "reactive"))
+  
   shiny::moduleServer(id, function(input, output, session) {
     state <- reactiveValues(
       # store brushed samples from scatterplot
@@ -189,11 +191,20 @@ fpcaViewServer <- function(id, rfds, pcares, ...,
       scatter_select = tibble(
         assay_name = character(), 
         feature_id = character()))
-    
-    pca <- reactive({
-      req(initialized(pcares))
-      faro(pcares)
-    })
+  
+    pca <- if (is(pcares, "reactive")) {
+      pcares 
+    } else {
+      shiny::reactive({
+        req(initialized(pcares))
+        faro(pcares)  
+      })
+    }
+
+    # pca <- reactive({
+    #   req(initialized(pcares))
+    #   faro(pcares)
+    # })
     
     pcs_calculated <- reactive({
       pca. <- req(pca())
