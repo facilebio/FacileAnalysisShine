@@ -393,7 +393,9 @@ fpcaViewUI <- function(id, ..., debug = FALSE) {
                 ns("aes"),
                 color = TRUE, shape = TRUE, facet = TRUE, hover = TRUE,
                 group = FALSE)))),
-        shinycssloaders::withSpinner(plotly::plotlyOutput(ns("pcaplot")))),
+        shinycssloaders::withSpinner({
+          shinyjqui::jqui_resizable(plotly::plotlyOutput(ns("pcaplot")))
+        })),
       shiny::column(
         width = 5,
         shiny::tags$h4("Feature Loadings"),

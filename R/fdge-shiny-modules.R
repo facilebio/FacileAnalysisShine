@@ -603,7 +603,9 @@ fdgeViewUI <- function(id, rmd = FALSE, ..., debug = FALSE) {
           onLabel = "Yes", offLabel = "No", value = TRUE,
           inline = TRUE),
         shiny::tags$span("Batch Correction", style = "font-weight: bold"))),
-    shinycssloaders::withSpinner(plotly::plotlyOutput(ns("boxplot"))))
+    shinycssloaders::withSpinner({
+      shinyjqui::jqui_resizable(plotly::plotlyOutput(ns("boxplot")))
+    }))
 
   shiny::fluidRow(
     # Plots Column

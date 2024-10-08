@@ -1,7 +1,7 @@
 Package: FacileAnalysisShine
 Type: Package
 Title: Interactive components to a FacileAnalysis
-Version: 0.0.11
+Version: 0.0.12
 Authors@R: c(
     person(
       "Steve", "Lianoglou",
@@ -31,6 +31,7 @@ Imports:
     shiny (>= 1.3.1),
     shinydashboard,
     shinyjs,
+    shinyjqui,
     shinycssloaders,
     shinyWidgets,
     stringr,
