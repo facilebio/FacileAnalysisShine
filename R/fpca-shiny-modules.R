@@ -307,7 +307,7 @@ fpcaViewServer <- function(
       viz(pca., dims = axes, type = "scatter",
           color_aes = acolor, shape_aes = ashape,
           hover = ahover, facet_aes = afacet,
-          width = NULL, height = 550)
+          width = NULL, height = NULL)
     })
     
     output$pcaplot <- plotly::renderPlotly({
@@ -415,7 +415,7 @@ fpcaViewUI <- function(id, ..., debug = FALSE) {
           # )),
         ,
         # shinyWidgets::addSpinner(
-        shinycssloaders::withSpinner(DT::DTOutput(ns("loadings"), height = "650px")),
+        shinycssloaders::withSpinner(DT::DTOutput(ns("loadings"))), # , height = "650px")),
         spin = getOption("FacileShine.spinner_type"),
         color = getOption("FacileShine.spinner_color")
         # )
