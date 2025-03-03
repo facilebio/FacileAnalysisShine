@@ -17,9 +17,9 @@ fpcaRunOptionsUI <- function(id, width = "300px", ..., debug = FALSE) {
         `count-selected-text` = "{0} classes chosen"
       )),
     shiny::numericInput(ns("pcs"), label = "Number of PCs",
-                        value = 10, min = 2, max = 30, step = 1),
+                        value = 5, min = 2, max = 30, step = 1),
     shiny::numericInput(ns("ntop"), label = "Number of genes",
-                        value = 500, min = 50, max = 5000, step = 500),
+                        value = 1000, min = 50, max = 5000, step = 500),
     shiny::numericInput(ns("priorcount"), label = "Prior Count",
                         value = 5, min = 1, max = 10, step = 1))
 }
