@@ -18,14 +18,20 @@ initialized.FacileDgeAnalysisResult <- function(x, ...) {
 #'   fdge(method = "voom")
 #' shine(dge.ttest)
 #' 
+#' # Limit view on subset of genes
+#' fsome <- tidy(dge.ttest) |> dplyr::sample_n(20)
+#' shine(dge.ttest, features = fsome)
+#' 
 #' dge.anova <- afds |>
 #'   flm_def("cell_abbrev") |> 
 #'   fdge(method = "voom")
 #' shine(dge.anova)
 #' }
-shine.FacileDgeAnalysisResult <- function(x, user = Sys.getenv("USER"),
+shine.FacileDgeAnalysisResult <- function(x, features = NULL, 
+                                          user = Sys.getenv("USER"),
                                           title = "Differential Expression Results",
-                                          viewer = "browser", ...) {
+                                          viewer = "browser", 
+                                          ...) {
   frunGadgetServer(fdgeViewServer, fdgeViewUI, x, dgeres = x, title = title,
-                   viewer = viewer, ...)
+                   viewer = viewer, feature_subset = features, ...)
 }

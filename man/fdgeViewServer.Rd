@@ -9,7 +9,7 @@ fdgeViewServer(
   rfds,
   dgeres,
   ...,
-  feature_subset = reactive(NULL),
+  feature_subset = NULL,
   feature_selection = NULL,
   sample_selection = NULL,
   debug = FALSE

@@ -251,7 +251,7 @@ fdge.ReactiveFacileLinearModelDefinition <- function(x, assay_name = NULL,
 #' @export
 #' @param dgeres The result from calling [fdge()], or [fdgeRun()].
 fdgeViewServer <- function(id, rfds, dgeres, ...,
-                           feature_subset = reactive(NULL),
+                           feature_subset = NULL,
                            feature_selection = NULL,
                            sample_selection = NULL,
                            debug = FALSE) {
@@ -259,15 +259,28 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
   assert_multi_class(dgeres, c("ReactiveFacileDgeAnalysisResult", "FacileDgeAnalysisResult", "reactive"))
 
   shiny::moduleServer(id, function(input, output, session) {
+    # if (!shiny::is.reactive(feature_subset)) {
+    #   message("Reactivating")
+    #   feature_subset <- shiny::reactive(feature_subset)
+    # }
+    
     state <- reactiveValues(
       # store brushed values from volcano plot here so that it can be reset
       # externally. When a new DGE is run, I want to turn off the volcano, and
       # blow out the selection. If we rely on just the reactive nature of
       # event_data("plotly_selected") then the selection would be stuck when
       # user turns off the volcano option
+      feature_subset = feature_subset,
       volcano_select = tibble(assay_name = character(), feature_id = character()),
-      boxplot_select = tibble(dataset = character(), sample_id = character()))
+      boxplot_select = tibble(dataset = character(), sample_id = character())
+    )
     
+    if (is.reactive(feature_subset)) {
+      observe({
+        state$feature_subset <- feature_subset() 
+      })
+    }
+        
     if (is.null(feature_selection)) {
       feature_selection <- session$ns("volcano")
     }
@@ -322,17 +335,15 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     #    brushing is active, then (2) == (1)
     dge.stats.all <- reactive({
       dge. <- req(dge())
-      fsubset <- feature_subset()
       
       ranked <- result(ranks(dge.))
       if (is_ttest(dge.)) {
-        out <- select(ranked, symbol, feature_id, logFC, FDR = padj, pval)
+        out <- dplyr::select(ranked, symbol, feature_id, logFC, FDR = padj, pval)
       } else {
-        out <- select(ranked, symbol, feature_id, F, FDR = padj, pval)
+        out <- dplyr::select(ranked, symbol, feature_id, F, FDR = padj, pval)
       }
-      
-      if (is.character(fsubset) && length(fsubset) > 1) {
-        out <- filter(out, .data$feature_id %in% fsubset)
+      if (!is.null(state$feature_subset) && nrow(state$feature_subset) > 0L) {
+        out <- dplyr::semi_join(out, state$feature_subset, by = "feature_id")
       }
 
       out
