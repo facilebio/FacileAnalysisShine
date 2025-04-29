@@ -562,6 +562,7 @@ fdgeViewServer <- function(id, rfds, dgeres, ...,
     }, server = TRUE)
   
     vals <- list(
+      x = dge,
       selected_features = reactive(state$volcano_select),
       selected_samples = reactive(state$boxplot_select),
       .ns = session$ns)

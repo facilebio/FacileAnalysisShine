@@ -366,6 +366,12 @@ fpcaViewServer <- function(
         options = dtopts)
       DT::formatRound(dt, num.cols, 3)
     }, server = TRUE)
+    
+    vals <- list(
+      x = pca,
+      loadings = pc.loadings
+    )
+    vals
   })
 }
 
