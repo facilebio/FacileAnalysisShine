@@ -59,10 +59,17 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
       }
       
       is_sane <- is.anova || is.ttest
-      
       if (is_sane) {
-        out <- flm_def(samples., testcov., numer = numer., denom = denom.,
-                batch = batch.)
+        # poorly groomed dataset can fail here when the testing covariate
+        # has one real level, ie. unique(sampels[[tescov.]]) is c("something", "")
+        out <- tryCatch({
+          flm_def(
+            samples., 
+            testcov., 
+            numer = numer., 
+            denom = denom.,
+            batch = batch.)
+        }, error = function(e) NULL)
       } else {
         out <- NULL
       } 

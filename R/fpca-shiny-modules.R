@@ -8,27 +8,34 @@
 #' if (interactive()) {
 #' # run tumor vs normal comparisons vs each, then run compare9) on the results
 #' efds <- FacileData::exampleFacileDataSet()
+#' egdb <- sparrow::exampleGeneSetDb()
 #' pca.crc <- efds |>
 #'   FacileData::filter_samples(indication == "CRC") |>
-#'   fpcaGadget()
+#'   fpcaGadget(gdb = egdb)
 #' report(pca.crc)
 #' shine(pca.crc)
 #' }
 fpcaGadget <- function(x, title = "Principal Components Analysis",
-                       viewer = "browser", ...) {
+                       viewer = "browser", gdb = NULL, ...) {
   assert_multi_class(x, c("FacileDataStore", "facile_frame"))
   frunGadgetServer(fpcaAnalysisServer, fpcaAnalysisUI, x, title = title,
-                   viewer = viewer, ...)
+                   viewer = viewer, gdb = shiny::reactive(gdb), ...)
 }
 
 # Embeddable Analysis Module ===================================================
 
 #' @noRd
 #' @export
-fpcaAnalysisServer <- function(id, rfds, ..., debug = FALSE) {
+fpcaAnalysisServer <- function(
+    id,
+    rfds,
+    gdb = shiny::reactive(NULL),
+    ...,
+    debug = FALSE
+) {
   assert_class(rfds, "ReactiveFacileDataStore")
   shiny::moduleServer(id, function(input, output, session) {
-    pca <- fpcaRunServer("pca", rfds, ..., debug = debug)
+    pca <- fpcaRunServer("pca", rfds, gdb = gdb, ..., debug = debug)
     view <- fpcaViewServer("view", rfds, pca, ..., debug = debug)
     
     # Only show view widgets when there is a pca result
@@ -71,7 +78,13 @@ fpcaAnalysisUI <- function(id, ..., debug = FALSE) {
 #' Minimal shiny module to run fpca
 #'
 #' @export
-fpcaRunServer <- function(id, rfds, ..., debug = FALSE) {
+fpcaRunServer <- function(
+    id, 
+    rfds,
+    gdb = shiny::reactive(NULL),
+    ...,
+    debug = FALSE
+) {
   # Provide user with inputs to control:
   # 1. Assay to run PCA on
   # 2. Number of PCs to calculate
