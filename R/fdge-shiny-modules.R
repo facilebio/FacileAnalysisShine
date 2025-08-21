@@ -81,7 +81,6 @@ fdgeAnalysisServer <- function(id, rfds, ..., debug = FALSE) {
   })
 }
 
-
 #' @noRd
 #' @export
 #' @importFrom shiny
