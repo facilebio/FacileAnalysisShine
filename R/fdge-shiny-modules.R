@@ -147,10 +147,10 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
     dge <- eventReactive(input$run, {
       req(runnable())
       assay_name. <- assay$selected()
+      
       flm <- unreact(faro(model))
       
       shinyjs::disable("run")
-      
       result <- shiny::withProgress({
         tryCatch(
           fdge(flm, assay_name = assay_name.,
@@ -170,9 +170,8 @@ fdgeRunServer <- function(id, rfds, model, ..., debug = FALSE,
           "Error in differential analysis",
           text = result, type = "error")
       }
-      
       shinyjs::enable("run")
-
+      
       result
     })
     

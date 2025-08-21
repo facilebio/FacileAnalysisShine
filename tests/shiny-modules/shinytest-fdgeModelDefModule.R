@@ -31,3 +31,7 @@ shiny::shinyApp(
     model <- flmDefRunServer("model", rfds, debug = TRUE)
   }
 )
+
+# fdgeGadget on a facile_frame with custom covariates
+xs <- mutate(pdata, something = sample_type)
+fdgeGadget(xs)

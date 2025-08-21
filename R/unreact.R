@@ -64,6 +64,12 @@ unreact.ReactiveFacileDataStore <- function(x, ...) {
 }
 
 #' @noRd
+#' @export
+unreact.FacileDataStore <- function(x, ...) {
+  x
+}
+
+#' @noRd
 rm.rds.class <- function(x, ...) {
   oclass <- class(x)
   rds.classes <- grepl("^reactive_", oclass, ignore.case = TRUE)

@@ -54,11 +54,27 @@ flmDefRunServer <- function(id, rfds, default_covariate = NULL,
       is.ttest <- !unselected(testcov.) &&
         !unselected(numer.) && !unselected(denom.) &&
         !setequal(numer., denom.)
+      
       if (is.ttest) {
         req(all(c(numer., denom.) %in% testcov$levels()))
       }
       
       is_sane <- is.anova || is.ttest
+      
+      # 2025-08021: The "extra sample-level annotation" columns are not
+      # available to the logic in flm_def right now, let's add them here
+      extra_covs <- shiny::isolate(rfds$active_pdata()) |> 
+        dplyr::select(
+          dataset,
+          sample_id,
+          dplyr::everything(),
+          -dplyr::ends_with(".infds")
+        )
+      if (ncol(extra_covs) > 2L) {
+        samples. <- samples. |> 
+          dplyr::left_join(extra_covs, by = c("dataset", "sample_id"))
+      }
+      
       if (is_sane) {
         # poorly groomed dataset can fail here when the testing covariate
         # has one real level, ie. unique(sampels[[tescov.]]) is c("something", "")

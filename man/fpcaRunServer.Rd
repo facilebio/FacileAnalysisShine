@@ -4,7 +4,7 @@
 \alias{fpcaRunServer}
 \title{Minimal shiny module to run fpca}
 \usage{
-fpcaRunServer(id, rfds, ..., debug = FALSE)
+fpcaRunServer(id, rfds, gdb = shiny::reactive(NULL), ..., debug = FALSE)
 }
 \description{
 Minimal shiny module to run fpca

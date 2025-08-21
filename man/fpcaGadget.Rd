@@ -4,7 +4,13 @@
 \alias{fpcaGadget}
 \title{Perform a PCA analysis on a (subset) of a FacileDataStore}
 \usage{
-fpcaGadget(x, title = "Principal Components Analysis", viewer = "browser", ...)
+fpcaGadget(
+  x,
+  title = "Principal Components Analysis",
+  viewer = "browser",
+  gdb = NULL,
+  ...
+)
 }
 \description{
 Interactively runs PCA on a FacileDataStore. If you want to run PCA on a
@@ -14,9 +20,10 @@ subset of samples, pass in a facile_frame sample descriptor
 if (interactive()) {
 # run tumor vs normal comparisons vs each, then run compare9) on the results
 efds <- FacileData::exampleFacileDataSet()
+egdb <- sparrow::exampleGeneSetDb()
 pca.crc <- efds |>
   FacileData::filter_samples(indication == "CRC") |>
-  fpcaGadget()
+  fpcaGadget(gdb = egdb)
 report(pca.crc)
 shine(pca.crc)
 }
